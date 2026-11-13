@@ -1,0 +1,16 @@
+{
+  "nsf_list": [
+    {
+      "dataSource": "db_conn1",
+      "name": "approve/repository/repositoryexp20234.nsf"
+    },
+    {
+      "name": "approve/repository/repositoryexp20233.nsf",
+      "dataSource": "db_conn1"
+    },
+    {
+      "name": "egate/global/eap1/aprv/repository/doc/repository20243.nsf",
+      "dataSource": "db_conn2"
+    }
+  ]
+}

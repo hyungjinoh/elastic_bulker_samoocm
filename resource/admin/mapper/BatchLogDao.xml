@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.rayful.elastic.batch.common.dao.IBatchLogDao">
+	
+	<select id="selectBatchLog" parameterType="string" resultType="com.rayful.elastic.batch.common.vo.BatchLogVO">
+	<![CDATA[
+		SELECT /* IBatchLogDao.selectBatchLog */
+			BATCH_ID as batchId
+			, BATCH_DT as batchDt
+			, BATCH_STATUS as batchStatus
+			, BATCH_HOST as batchHost
+			, START_DT as startDt
+			, END_DT as endDt
+		FROM
+			TB_LOG_BATCH
+		WHERE
+		    BATCH_ID = #{batchId}
+			AND BATCH_DT like CONCAT(#{batchDt},'%')
+		ORDER BY START_DT DESC
+		LIMIT 1
+	]]>
+	</select>
+	
+	<insert id="insertBatchInitLog">
+	<![CDATA[
+		INSERT /* IBatchLogDao.insertBatchInitLog */
+		INTO
+			TB_LOG_BATCH
+				(
+					BATCH_ID
+					, BATCH_DT
+					, BATCH_HOST
+					, BATCH_STATUS
+					, START_DT
+					, END_DT
+				)
+		VALUES
+			(
+				#{batchId}
+				, #{batchDt}
+				, #{batchHost}
+				, 'P'
+				, NOW()
+				, NULL
+			)
+	]]>
+	</insert>
+	
+	<update id="updateBatchStatus">
+	<![CDATA[
+		UPDATE /* IBatchLogDao.updateBatchLog */
+			TB_LOG_BATCH
+		SET
+		    BATCH_STATUS = #{batchStatus}
+	]]>
+	<if test='batchStatus == "S" or batchStatus == "F"'>
+	<![CDATA[
+			, END_DT = NOW()
+	]]>
+	</if>
+	<![CDATA[
+		WHERE
+		    BATCH_ID = #{batchId}
+			AND BATCH_DT = #{batchDt}
+	]]>
+	</update>
+
+</mapper>

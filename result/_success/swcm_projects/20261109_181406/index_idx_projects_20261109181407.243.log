@@ -1,0 +1,1 @@
+{errors=false, took=0, items=[{index={_index=idx_projects1, _id=1PxJjicq4y-, _version=3, result=updated, _shards={total=1, successful=1, failed=0}, _seq_no=6, _primary_term=1, status=200}}]}

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="false" scanPeriod="60 seconds">
+	
+	<!-- 프로퍼티 설정 -->
+	<property resource="config.properties"/>
+	
+	<!-- 환경변수 설정 -->
+	<property name="LOG_NAME" value="${logname:-default}"/>
+	
+	<!-- Appender 설정 -->
+	<appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder>
+			<pattern>%-48([%-6level] %d{yyyy-MM-dd HH:mm:ss}, %thread, %logger{0}[%line]) %msg%n</pattern>
+		</encoder>
+	</appender>
+	
+	<!-- ROLLING 날짜별 로깅 (AUTOVOL) -->
+	<appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<file></file>
+		<rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+			<fileNamePattern>${BULKER.PATH.LOG}/%d{yyyyMMdd}/index.${LOG_NAME}.%i.log</fileNamePattern>
+			<maxFileSize>100MB</maxFileSize>
+			<maxHistory>90</maxHistory>
+		</rollingPolicy>
+		<encoder>
+			<pattern>%-48([%-6level] %d{yyyy-MM-dd HH:mm:ss}, %thread, %logger{0}[%line]) %msg%n</pattern>
+		</encoder>
+	</appender>
+	
+	<appender name="FILE_ERROR" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<fileNamePattern>${BULKER.PATH.LOG}/%d{yyyyMMdd}/attach.error.${LOG_NAME}.log</fileNamePattern>
+			<maxHistory>90</maxHistory>
+		</rollingPolicy>
+		<encoder>
+			<pattern>%msg ... %d{yyyy-MM-dd HH:mm:ss}%n</pattern>
+		</encoder>
+	</appender>
+	
+	<!-- Logger -->
+	<logger name="com.rayful" level="${BULKER.LOG.LEVEL}">
+		<appender-ref ref="console"/>
+		<appender-ref ref="FILE"/>
+	</logger>
+	
+	<!-- Logger -->
+	<logger name="kr.co" level="${BULKER.LOG.LEVEL}">
+		<appender-ref ref="console"/>
+		<appender-ref ref="FILE"/>
+	</logger>
+	
+	<!-- Logger -->
+	<logger name="com.dbhitek" level="${BULKER.LOG.LEVEL}">
+		<appender-ref ref="console"/>
+		<appender-ref ref="FILE"/>
+	</logger>
+	
+	 <!-- 'FILE_ERROR' 태깅된 로그만 따로 필터링해서 error.xxxx.log로 -->
+    <logger name="FILE_ERRO_LOGGER" additivity="false" level="INFO">
+        <appender-ref ref="FILE_ERROR"/>
+    </logger>
+	
+</configuration>

@@ -1,0 +1,131 @@
+version: '3.8'
+
+# ============================================================================
+# xpack.security.enabled=true + HTTPS(self-signed) 테스트 환경
+# - setup 컨테이너가 최초 1회 CA/서버 인증서를 자동 생성 (elasticsearch-certutil)
+# - ES는 그 인증서로 HTTPS 기동, elastic 계정 비밀번호는 ELASTIC_PASSWORD로 지정
+# - 인증서 SAN에 localhost / 127.0.0.1 / elasticsearch 포함
+#   → 앱(elastic_api_standard_menu_search)에서 https://localhost:9200 접속 시
+#     호스트명 검증까지 통과 가능
+# ============================================================================
+
+services:
+
+  # ─── 인증서 생성 + kibana_system 비밀번호 설정 (최초 1회) ──────────────
+  setup:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.8
+    container_name: es_asset_setup
+    user: "0"
+    environment:
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD:-elastic1234}
+      - KIBANA_PASSWORD=${KIBANA_PASSWORD:-kibana1234}
+    volumes:
+      - es_certs:/usr/share/elasticsearch/config/certs
+    command: >
+      bash -c '
+        if [ ! -f config/certs/ca/ca.crt ]; then
+          echo ">> CA 생성";
+          bin/elasticsearch-certutil ca --silent --pem -out config/certs/ca.zip;
+          unzip -o config/certs/ca.zip -d config/certs;
+        fi;
+        if [ ! -f config/certs/es_asset/es_asset.crt ]; then
+          echo ">> 서버 인증서 생성 (SAN: elasticsearch, localhost, 127.0.0.1)";
+          printf "instances:\n  - name: es_asset\n    dns:\n      - elasticsearch\n      - localhost\n    ip:\n      - 127.0.0.1\n" > config/certs/instances.yml;
+          bin/elasticsearch-certutil cert --silent --pem \
+            -out config/certs/certs.zip \
+            --in config/certs/instances.yml \
+            --ca-cert config/certs/ca/ca.crt \
+            --ca-key config/certs/ca/ca.key;
+          unzip -o config/certs/certs.zip -d config/certs;
+        fi;
+        chown -R 1000:0 config/certs;
+        find config/certs -type d -exec chmod 750 {} \;;
+        find config/certs -type f -exec chmod 640 {} \;;
+        echo ">> ES 기동 대기 후 kibana_system 비밀번호 설정";
+        until curl -sk --cacert config/certs/ca/ca.crt -u "elastic:${ELASTIC_PASSWORD:-elastic1234}" https://elasticsearch:9200 | grep -q "cluster_name"; do sleep 5; done;
+        curl -sk --cacert config/certs/ca/ca.crt -u "elastic:${ELASTIC_PASSWORD:-elastic1234}" \
+          -X POST https://elasticsearch:9200/_security/user/kibana_system/_password \
+          -H "Content-Type: application/json" \
+          -d "{\"password\":\"${KIBANA_PASSWORD:-kibana1234}\"}";
+        echo ">> setup 완료";
+      '
+    networks:
+      - asset-net
+    healthcheck:
+      test: ["CMD-SHELL", "[ -f config/certs/es_asset/es_asset.crt ]"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  # ─── Elasticsearch 8.x (security + HTTPS) ──────────────────────────────
+  elasticsearch:
+    # 기존 image: docker.elastic.co/... 라인을 지우고 아래 build 설정을 넣습니다.
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: es_asset
+    depends_on:
+      setup:
+        condition: service_healthy
+    environment:
+      - node.name=es_asset
+      - cluster.name=asset-search-cluster
+      - discovery.type=single-node
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD:-elastic1234}
+      - xpack.security.enabled=true
+      - xpack.security.http.ssl.enabled=true
+      - xpack.security.http.ssl.key=certs/es_asset/es_asset.key
+      - xpack.security.http.ssl.certificate=certs/es_asset/es_asset.crt
+      - xpack.security.http.ssl.certificate_authorities=certs/ca/ca.crt
+      - xpack.security.transport.ssl.enabled=true
+      - xpack.security.transport.ssl.key=certs/es_asset/es_asset.key
+      - xpack.security.transport.ssl.certificate=certs/es_asset/es_asset.crt
+      - xpack.security.transport.ssl.certificate_authorities=certs/ca/ca.crt
+      - xpack.security.transport.ssl.verification_mode=certificate
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+      - es_certs:/usr/share/elasticsearch/config/certs
+    networks:
+      - asset-net
+
+    # ── [중요] 기존의 긴 bash 스크립트 command 대신 순수 기본 entrypoint로 원복합니다 ──
+    command: ["elasticsearch"]
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sk --cacert config/certs/ca/ca.crt -u elastic:${ELASTIC_PASSWORD:-elastic1234} https://localhost:9200/_cluster/health | grep -q '\"status\"' || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 15
+
+  # ─── Kibana (데이터 확인용) ─────────────────────────────────────────────
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.17.8
+    container_name: kibana_asset
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    environment:
+      - ELASTICSEARCH_HOSTS=https://elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=kibana_system
+      - ELASTICSEARCH_PASSWORD=${KIBANA_PASSWORD:-kibana1234}
+      - ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES=/usr/share/kibana/config/certs/ca/ca.crt
+    ports:
+      - "5601:5601"
+    volumes:
+      - es_certs:/usr/share/kibana/config/certs:ro
+    networks:
+      - asset-net
+
+volumes:
+  es_data:
+    driver: local
+  es_certs:
+    driver: local
+
+networks:
+  asset-net:
+    driver: bridge

@@ -1,0 +1,134 @@
+{
+  "settings": {
+    "number_of_shards": 2,
+    "number_of_replicas": 1,
+    "index.default_pipeline": "idx_projects_files_date_pipeline",
+    "analysis": {
+      "tokenizer": {
+        "nori_mixed_tokenizer": { "type": "nori_tokenizer", "decompound_mode": "mixed" },
+        "nori_none_tokenizer": { "type": "nori_tokenizer", "decompound_mode": "none" },
+        "path_hier_tokenizer": { "type": "path_hierarchy", "delimiter": "/" }
+      },
+      "filter": {
+        "nori_pos_filter": {
+          "type": "nori_part_of_speech",
+          "stoptags": [
+            "E", "IC", "J", "MAG", "MAJ", "MM", "SP", "SSC", "SSO", "SC", "SE",
+            "XPN", "XSA", "XSN", "XSV", "UNA", "NA", "VSV", "VCP", "VCN"
+          ]
+        }
+      },
+      "analyzer": {
+        "korean_index": {
+          "type": "custom",
+          "tokenizer": "nori_mixed_tokenizer",
+          "filter": ["nori_pos_filter", "lowercase"]
+        },
+        "korean_search": {
+          "type": "custom",
+          "tokenizer": "nori_none_tokenizer",
+          "filter": ["nori_pos_filter", "lowercase"]
+        },
+        "path_hierarchy_analyzer": {
+          "type": "custom",
+          "tokenizer": "path_hier_tokenizer"
+        }
+      }
+    }
+  },
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "entry_type": { "type": "keyword" },
+      "dockey": { "type": "keyword" },
+      "project_id": { "type": "keyword" },
+      "folder_id": { "type": "keyword" },
+
+      "folder_name": {
+        "type": "text",
+        "analyzer": "korean_index",
+        "search_analyzer": "korean_search",
+        "fields": {
+          "keyword": { "type": "keyword", "ignore_above": 512 }
+        }
+      },
+      "folder_path": {
+        "type": "text",
+        "analyzer": "korean_index",
+        "search_analyzer": "korean_search",
+        "fields": {
+          "keyword": { "type": "keyword", "ignore_above": 2048 },
+          "tree": { "type": "text", "analyzer": "path_hierarchy_analyzer" }
+        }
+      },
+      "path_lv1": { "type": "keyword" },
+      "path_lv2": { "type": "keyword" },
+      "path_lv3": { "type": "keyword" },
+      "path_lv4": { "type": "keyword" },
+
+      "folder_depth": { "type": "integer" },
+      "parent_folder_id": { "type": "keyword" },
+      "folder_status": { "type": "keyword" },
+      "folder_acl_id": { "type": "keyword" },
+      "folder_creator_id": { "type": "keyword" },
+      "folder_created_date": { "type": "date", "format": "strict_date_optional_time" },
+
+      "doc_id": { "type": "keyword" },
+      "doc_name": {
+        "type": "text",
+        "analyzer": "korean_index",
+        "search_analyzer": "korean_search",
+        "fields": {
+          "keyword": { "type": "keyword", "ignore_above": 512 }
+        }
+      },
+      "doc_acl_id": { "type": "keyword" },
+      "doc_type_id": { "type": "keyword" },
+      "doc_type_name": { "type": "keyword" },
+      "doc_status": { "type": "keyword" },
+      "doc_version_number": { "type": "keyword" },
+      "doc_creator_id": { "type": "keyword" },
+      "doc_creator_name": {
+        "type": "text",
+        "analyzer": "korean_index",
+        "search_analyzer": "korean_search",
+        "fields": {
+          "keyword": { "type": "keyword", "ignore_above": 256 }
+        }
+      },
+      "doc_created_date": { "type": "date", "format": "strict_date_optional_time" },
+      "doc_updater_id": { "type": "keyword" },
+      "doc_updated_date": { "type": "date", "format": "strict_date_optional_time" },
+
+      "file_id": { "type": "keyword" },
+      "file_name": {
+        "type": "text",
+        "analyzer": "korean_index",
+        "search_analyzer": "korean_search",
+        "fields": {
+          "keyword": { "type": "keyword", "ignore_above": 512 }
+        }
+      },
+      "file_extension": { "type": "keyword" },
+      "file_content_size": { "type": "long" },
+      "file_content_hash": { "type": "keyword" },
+      "file_is_origin": { "type": "boolean" },
+      "file_item_index": { "type": "integer" },
+      "file_creator_id": { "type": "keyword" },
+      "file_creator_name": {
+        "type": "text",
+        "analyzer": "korean_index",
+        "search_analyzer": "korean_search",
+        "fields": {
+          "keyword": { "type": "keyword", "ignore_above": 256 }
+        }
+      },
+      "file_created_date": { "type": "date", "format": "strict_date_optional_time" },
+      "file_repository_name": { "type": "keyword" },
+      "file_repository_workspace": { "type": "keyword" },
+      "file_repository_path": { "type": "keyword", "index": false },
+
+      "indexed_dtm": { "type": "date", "format": "strict_date_optional_time" }
+    }
+  }
+}

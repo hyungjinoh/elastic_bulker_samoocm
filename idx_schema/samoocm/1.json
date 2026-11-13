@@ -1,0 +1,54 @@
+p.PROJECT_ID               AS "docid",           		   -- [FW_PROJECTS] 키값
+p.PROJECT_ID               AS "project_id",              -- [FW_PROJECTS] 소속 프로젝트 식별자 (ES 문서 _id 로 사용 권장)
+p.PROJECTSTATUS            AS "project_status",          -- [FW_PROJECTS] 프로젝트 상태
+p.SAVE_STATUS              AS "save_status",             -- [FW_PROJECTS] 저장 상태 (C 확정 / T 임시저장: 개설신청 중간 저장", 그룹/폴더 미생성)
+TO_CHAR(p.CREATED_DATE, 'YYYY-MM-DD"T"HH24:MI:SS')             AS "created_date",            -- [FW_PROJECTS] 등록일
+TO_CHAR(p.LAST_MODIFIED_DATE, 'YYYY-MM-DD"T"HH24:MI:SS')       AS "last_modified_date",      -- [FW_PROJECTS] 최종 수정 일자
+TO_CHAR(p.EXPIRED_DATE, 'YYYY-MM-DD"T"HH24:MI:SS')             AS "expired_date",            -- [FW_PROJECTS] 만기일
+p.FOLDER_ID                AS "folder_id",               -- [FW_PROJECTS] 폴더 ID
+p.MANAGER_GROUP_ID         AS "manager_group_id",        -- [FW_PROJECTS] 관리자 그룹 ID
+i.PROJECTNO                AS "project_no",              -- [FW_PROJECT_INFO] 프로젝트 번호
+i.PJTNAME                  AS "pjt_name",                -- [FW_PROJECT_INFO] 프로젝트명
+i.MISNAME                  AS "mis_name",                -- [FW_PROJECT_INFO] 등록명(국문)
+i.MISNAMEENG               AS "mis_name_eng",            -- [FW_PROJECT_INFO] 등록명(영문)
+i.CONTRACTNAME             AS "contract_name",           -- [FW_PROJECT_INFO] 계약명(국문)
+i.NAME                     AS "doc_name",                -- [FW_PROJECT_INFO] 파일명
+i.PROJECTGUBUN             AS "project_gubun",           -- [FW_PROJECT_INFO] 표준폴더
+i.PROJECTGUBUNTITLE        AS "project_gubun_title",     -- [FW_PROJECT_INFO] 표준폴더1 구분타이틀
+i.SECURITYLEVEL            AS "security_level",          -- [FW_PROJECT_INFO] 보안등급
+i.COUNTRY                  AS "country",                 -- [FW_PROJECT_INFO] 국내
+i.CITYAFTER                AS "city_after",              -- [FW_PROJECT_INFO] 국내 준공후 시/도
+i.TOWNAFTER                AS "town_after",              -- [FW_PROJECT_INFO] 국내 준공후 시/군/구
+i.OVERSEAS                 AS "overseas",                -- [FW_PROJECT_INFO] 해외
+i.NATIONAFTER              AS "nation_after",            -- [FW_PROJECT_INFO] 해외 준공후 국가
+i.ENTERPRISETYPE           AS "enterprise_type",         -- [FW_PROJECT_INFO] 사업유형
+i.DIVISIONBUSINESS1        AS "division_business1",      -- [FW_PROJECT_INFO] 사업주체
+i.FACILITIESTYPE           AS "facilities_type",         -- [FW_PROJECT_INFO] 시설유형
+i.BUILDINGUSE              AS "building_use",            -- [FW_PROJECT_INFO] 용도
+i.SITEAREA                 AS "site_area",               -- [FW_PROJECT_INFO] 대지면적(㎡)
+i.BUILDINGAREA             AS "building_area",           -- [FW_PROJECT_INFO] 건축면적(㎡)
+i.TOTALFLOORAREA           AS "total_floor_area",        -- [FW_PROJECT_INFO] 연면적(㎡)
+i.GROUNDFLOORS             AS "ground_floors",           -- [FW_PROJECT_INFO] 지상층
+i.UNDERGROUNDFLOORS        AS "underground_floors",      -- [FW_PROJECT_INFO] 지하층
+TO_CHAR(i.CONTRACT_DATE, 'YYYY-MM-DD"T"HH24:MI:SS')            AS "contract_date",           -- [FW_PROJECT_INFO] 계약일자
+TO_CHAR(i.CONSTRUCTION_DATE, 'YYYY-MM-DD"T"HH24:MI:SS')        AS "construction_date",       -- [FW_PROJECT_INFO] 착공일자
+TO_CHAR(i.COMPLETIONAPPROVAL_DATE, 'YYYY-MM-DD"T"HH24:MI:SS')  AS "completion_approval_date",-- [FW_PROJECT_INFO] 사용승인일자
+TO_CHAR(i.STARTDATE, 'YYYY-MM-DD"T"HH24:MI:SS')                AS "start_date",              -- [FW_PROJECT_INFO] 착수일
+TO_CHAR(i.ENDDATE, 'YYYY-MM-DD"T"HH24:MI:SS')                  AS "end_date",                -- [FW_PROJECT_INFO] 종료일
+i.SSTEP                    AS "sstep",                   -- [FW_PROJECT_INFO] 단계
+i.PROGRESS                 AS "progress",                -- [FW_PROJECT_INFO] 진행상황
+i.ORDERDEPT                AS "order_dept",              -- [FW_PROJECT_INFO] 참여정보 수주부서
+i.WORKGUBUN                AS "work_gubun",              -- [FW_PROJECT_INFO] 참여정보 업무구분
+i.SERVICEGUBUN             AS "service_gubun",           -- [FW_PROJECT_INFO] 참여정보 용역구분
+i.DEPARTMENTPMID           AS "dept_pm_id",        		 -- [FW_PROJECT_INFO] 대표PMID
+i.DEPARTMENTPMNM           AS "dept_pm_nm",      		 -- [FW_PROJECT_INFO] 대표PM
+i.GENERALMANAGERID         AS "general_manager_id",      -- [FW_PROJECT_INFO] 단장ID
+i.GENERALMANAGERNM         AS "general_manager_nm",      -- [FW_PROJECT_INFO] 단장
+i.SALESPMID                AS "sales_pm_id",             -- [FW_PROJECT_INFO] 영업PM 사번
+i.SALESPMNM                AS "sales_pm_nm",             -- [FW_PROJECT_INFO] 내부 영업PM
+i.OPERATIONPMID            AS "operation_pm_id",         -- [FW_PROJECT_INFO] 운영PM 사번
+i.OPERATIONPMNM            AS "operation_pm_nm",         -- [FW_PROJECT_INFO] 운영PM
+i.TOTALEXPENSES            AS "total_expenses",          -- [FW_PROJECT_INFO] 사업비(￦)
+i.BASECURRENCY             AS "base_currency",           -- [FW_PROJECT_INFO] 공통 기준통화
+i.GREENCERTIFICATION       AS "green_certification",     -- [FW_PROJECT_INFO] 녹색건축인증
+i.BUILDINGENERGYRATING     AS "building_energy_rating"   -- [FW_PROJECT_INFO] 건축물에너지효율등급

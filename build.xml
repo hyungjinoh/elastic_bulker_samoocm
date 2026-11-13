@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="elastic_bulker" default="dist" basedir=".">
+	<description>Elastic bulker build file</description>
+	<property name="build.debug" value="on" />
+	
+	<!-- ###################### -->
+	<!-- set global properties for this build -->
+	<!-- ###################### -->
+	<property file="build.properties" />
+	<property name="build.name" value="${build.name}" />
+	<property name="build.charset" value="${build.charset}" />
+	<property name="build.target" value="${build.target}" />
+	<property name="custom.package" value="${custom.package}" />
+	
+	<property name="src" location="src"/>
+	<property name="src.custom" location="custom" />
+	<property name="resource" location="resource"/>
+	<property name="lib" location="lib"/>
+	<property name="batch" location="batch"/>
+	<property name="df" location="df"/>
+	<property name="build" location="bulk_build"/>
+	<property name="dist" location="bulk_dist"/>
+	
+	<condition property="isWindows">
+		<equals arg1="${deploy.os}" arg2="windows"/>
+	</condition>
+	<condition property="isLinux">
+		<equals arg1="${deploy.os}" arg2="linux"/>
+	</condition>
+	
+	<path id="classpath">
+	    <fileset dir="${dist}/lib" includes="**/*.jar"></fileset>
+	</path>
+	
+	<!-- BUILD TIME -->
+	<tstamp>
+	    <format property="build.timestamp" pattern="yyyy-MM-dd HH:mm:ss"/>
+	</tstamp>
+	
+	<!-- ###################### -->
+	<!-- Clean                  -->
+	<!-- ###################### -->
+	<target name="clean" description="clean up">
+		<!-- Delete the ${build} and ${dist} directory trees -->
+		<delete dir="${build}"/>
+		<delete dir="${dist}"/>
+	</target>
+	
+	<!-- ###################### -->
+	<!-- Initialize             -->
+	<!-- ###################### -->
+	<target name="init" depends="clean">
+		<tstamp/>
+		<mkdir dir="${build}"/>
+		<mkdir dir="${build}/src"/>
+		<mkdir dir="${build}/classes"/>
+		
+		<!-- ###################### -->
+		<!-- Soruce copy            -->
+		<!-- ###################### -->
+		<copy todir="${build}/src" includeemptydirs="false">
+			<fileset dir="${src}" includes="**/*.java"/>
+		</copy>
+		<copy todir="${build}/src" includeemptydirs="false">
+			<fileset dir="${src.custom}" includes="${custom.package}/**/*.java"/>
+		</copy>
+		<!-- resource 내 admin 패키지 아래 파일 복사 -->
+		<copy todir="${build}/classes" includeemptydirs="false">
+			<fileset dir="/${resource}" includes="admin/**/*.*"/>
+		</copy>
+	
+		<!-- ###################### -->
+		<!-- Df copy                -->
+		<!-- ###################### -->
+		<copy todir="${dist}/df" includeemptydirs="false">
+			<fileset dir="${src.custom}/${custom.package}/df" includes="*.xml"/>
+		</copy>
+		
+		<!-- ###################### -->
+		<!-- Lib copy               -->
+		<!-- ###################### -->
+		<copy todir="${dist}/lib" includeemptydirs="false">
+			<fileset dir="${lib}" includes="**"/>
+			<fileset dir="${src.custom}/${custom.package}/lib" includes="*" erroronmissingdir="false"/>
+		</copy>
+		
+		<!-- ###################### -->
+		<!-- Resource copy          -->
+		<!-- ###################### -->
+		<copy todir="${dist}/config" includeemptydirs="false">
+			<fileset dir="/${resource}" includes="*" />
+		</copy>
+		<copy todir="${dist}/config" includeemptydirs="false" overwrite="true">
+			<fileset dir="${src.custom}/${custom.package}/resource" includes="*" erroronmissingdir="false"/>
+		</copy>
+		
+		<!-- Write BUILD TIME to version.properties-->
+		<!--replace file="${dist}/config/version.properties"
+		             token="BUILD_DATE_PLACEHOLDER"
+		             value="${build.timestamp}" /-->
+		
+		<move file="${dist}/config/version.properties" tofile="${build}/classes/version.properties">
+	        <filterset>
+	            <filter token="BUILD_TIME" value="${build.timestamp}"/>
+	        </filterset>
+		</move>
+		
+	</target>
+	
+	<!-- ###################### -->
+	<!-- Batch copy             -->
+	<!-- ###################### -->
+	<target name="copy-bat" if="isWindows">
+		<copy todir="${dist}/bin" includeemptydirs="false">
+			<fileset dir="${batch}/windows" includes="*.bat"/>
+		</copy>
+		<copy todir="${dist}/bin" includeemptydirs="false" overwrite="true">
+			<fileset dir="${src.custom}/${custom.package}/bin" includes="*.sh" erroronmissingdir="false"/>
+		</copy>
+	</target>
+	
+	<target name="copy-sh" if="isLinux">
+		<copy todir="${dist}/bin" includeemptydirs="false">
+			<fileset dir="${batch}/linux" includes="*.sh"/>
+		</copy>
+		<copy todir="${dist}/bin" includeemptydirs="false" overwrite="true">
+			<fileset dir="${src.custom}/${custom.package}/bin" includes="*.sh" erroronmissingdir="false"/>
+		</copy>
+	</target>
+	
+	<!-- ###################### -->
+	<!-- Compile                -->
+	<!-- ###################### -->
+	<target name="compile" depends="init" description="compile the source">
+		<!-- Compile the Java code from ${src} into ${build} -->
+		<javac srcdir="${build}/src" destdir="${build}/classes" source="${build.target}" target="${build.target}" release="${build.target}" encoding="${build.charset}" classpathref="classpath" includeantruntime="false" debug="true" />
+	</target>
+	
+	<!-- ###################### -->
+	<!-- Jar                    -->
+	<!-- ###################### -->
+	<target name="dist" depends="compile, copy-bat, copy-sh" description="generate the distribution">
+		<!-- Create the distribution directory -->
+		<mkdir dir="${dist}/lib"/>
+		<!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
+		<jar jarfile="${dist}/lib/${build.name}.jar" basedir="${build}/classes"/>
+	</target>
+	
+</project>

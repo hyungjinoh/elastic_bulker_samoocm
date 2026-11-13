@@ -1,0 +1,343 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definition>
+	<!-- 
+	 	<target/>:
+			[필수] 대상 정보 
+	 		- 태그 속성 설명
+	 			* index_name: [필수] 검색엔진 내 색인명
+	 	<result_file/>:
+			[필수] 최종적으로 저장된는 덤프파일 정보
+	 		- 태그 속성 설명
+	 			* file_name: [필수] 덤프파일의 베이스명
+	 			* max_rows: [필수] 한 덤프파일 당 저장되는 최대 로우 수
+	 -->
+	 	
+	<target index_name="maruprod_idx1">
+		<result_file file_name="maruprodidx1" max_rows="100" />
+	</target>
+
+	<!--
+		<source/>: 
+			[필수] 
+			- 태그 속성 설명
+			 	* type: notes 또는 rdbms (기본값: rdbms) 
+	 -->
+	<source>
+		<!-- 
+			<connect_info/>:
+				[필수][복수 정의 가능] DB 접속정보
+				- 태그 속성 설명
+					* id: 접속정보의 유니크 id, 아래 정의 되는 XXXXX_query 태그들의 dataSource 속성 값은 이 id값을 명시한다.
+				- inner tag (source type="rdbms")
+					<rdbms/>: [필수] 데이터베이스 종류명 ex)oracle/mssql/mariadb (reserved)
+					<drivarClass/>: [필수] jdbc driver 클래스명
+					<url/>: [필수] jdbc url 
+					<username/>: [필수] 접속 계정
+					<password/>: [필수] 패스워드
+		 -->
+		<connect_info id="db_conn1">
+			<rdbms>oracle</rdbms>
+			<driverClass>oracle.jdbc.driver.OracleDriver</driverClass>
+			<url>jdbc:oracle:thin:@192.168.10.125:1521:xe</url>
+			<username>docsadm</username>
+			<password>ENC(CHANGE_ME)</password>
+		</connect_info>
+
+		<!-- 
+			<bulker_service/>: 
+				벌커의 메인 서비스
+				태그를 정의하지 않으면 기본 클래스가 실행된다. (기본값: com.rayful.bulk.service.es.BulkerSerivce)
+				BulkerSerivce (elastic) 혹은 Bulker4S42Service (search42)를 상속해서 커스텀 클래스 생성 가능
+				- 태그 속성 설명
+	 				* class_name: [필수] 실행 클래스명 
+			<index_service/>: 
+				검색엔진 API를 이용하여 벌크파일의 색인 요청, 응답 결과에 따라 벌크파일을 "_success", "_fail" 폴더로 이동
+				IndexService (elastic) 혹은 Index4S42Service (search42)를 상속해서 커스텀 클래스 생성 가능
+				- 태그 속성 설명
+					* use: 커스텀 클래스 실행 여부 (기본값: yes)
+					* class_name: [필수] 실행 클래스명
+			<etc_reader/>: 
+				벌커 메인 쿼리외에 추가 쿼리를 수행해야 할 경우 사용 
+				BaseEtcReader를 상속해서 executeEtc 메서드를 구현한 클래스를 생성해야함.
+				bulker_service에서 이 클래스를 생성해서 데이터를 추가로 조회하거나, 변경하기위해 사용
+				- 태그 속성 설명
+					* use: 커스텀 클래스 실행 여부 (기본값: yes)
+					* class_name: [필수] 실행 클래스명
+			<file_helper/>: 
+				첨부 다운로드 및 텍스트 필터링을 처리하는 헬프 클래스  (기본값: com.rayful.bulk.attach.DiskFileHelper)
+				IAttachFileHelper의 구현 클래스를 상속해서 다른 방식의 파일 처리 클래스 생성 가능, 
+				특히  첨부파일에 DRM이 걸려있을 경우 텍스트 추출전  DRM 해제를 위해 기존  IAttachFileHelper의 구현 클래스를 상속해서  decodeDrm(...) 함수를 재 정의해서 DRM 해제해야함.
+				BulkerService에서 이 클래스를 생성해서 파일 처리 시 사용 
+				- 태그 속성 설명
+					* use: 커스텀 클래스 실행 여부 (기본값: yes)
+					* class_name: [필수] 실행 클래스명
+					* remote_basepath: 원격지 파일의 베이스 경로를 명시 (기본값: 절대경로)
+					 	1) 절대경로: 이 속성을 생략 또는 빈 값으로 설정, db 경로로만 물리파일 접근
+					 	2) 상대경로: "." 으로 설정,  db 경로로만 물리파일 접근, db 경로가 /로 시작하면 제거하고 사용
+						3) 조합경로: 베이스 경로를 명시, "베이스 경로 + db 경로"를 합쳐 물리파일 접근
+					* remove_basepath: 제거해야할 시작경로를 명시 
+						조회된 경로가 remove_basepath에 명시한 경로로 시작한다면 remove_basepath에 명시한 경로를 제거한다.
+				- inner tag : ftp 접속정보- 선택한 file_helpr 클래스가 Ftp점속하는 클래스라면 명시해야하지만 그렇지 않다면 정의하지 않음.
+					<url/>: 접속서버 ip 혹은 도메인
+					<port/>: 접속서버 포트
+					<username/>: 사용자 계정
+					<password/>: 패스워드
+			<bulker_crypt/>: 
+				DF내  계정/패스워드 정보 암호화하여 기록 시  디코딩을 위한 클래스
+				BulkerBaseCrypt(jcrpty 라이브리러 사용)를 상속받은 커스텀 클래스 생성 가능
+				jdbcDAO, NotesDAO에서 이 클래스를 생성해서 암복호화에 사용
+				- 태그 속성 설명
+					* use: 커스텀 클래스 실행 여부 (기본값: yes)
+					* class_name: [필수] 실행 클래스명
+			<etc_processor/>:
+				벌커 메인 로직 수행 전/후로 처리해야할 작업수행하는 사용
+				BaseEtcProcessor를 상속해서 preProcess, postProcess 메서드를 구현한 클래스를 생성해야함.
+				- 태그 속성 설명
+					* use: 커스텀 클래스 실행 여부 (기본값: yes)
+					* class_name: [필수] 실행 클래스명	
+			
+			//////// For maru42용 솔루션 정용 ////////
+			<qa_service/>:
+				Qa42의 덤프파일을 생성하고, Qa42 API를 이용하여 벌크파일의 색인 요청 수행, Qa42 전용
+				- 태그 속성 설명
+					* use: 커스텀 클래스 실행 여부 (기본값: yes)
+					* class_name: [필수] 실행 클래스명
+			<entity_service/>:
+				Qa42 API를 이용하여 본문으로 부터 객체명(인물, 지역등)을 추출 시 사용 , Qa42 전용
+				- 태그 속성 설명
+					* use: 커스텀 클래스 실행 여부 (기본값: yes)
+					* class_name: [필수] 실행 클래스명
+		 -->
+		<bulker_service class_name="kr.co.softtech.bulk.SoftTechBulkerService" />
+		<index_service use="yes" class_name="com.rayful.bulk.service.maru42.Index4S42Service" />
+		<qa_service use="yes" class_name="kr.co.softtech.bulk.SoftTechQa42Service" />
+		<entity_service use="yes" class_name="kr.co.softtech.bulk.SoftTechEntityService" />
+		<file_helper use="no" class_name="com.rayful.bulk.attach.SftpFileHelper" remote_basepath="/data/sftp/attach" remove_basepath="/test/12">
+			<url>192.168.10.106</url>
+			<port>22</port>
+			<username>root</username>
+			<password>ENC(CHANGE_ME)</password>
+		</file_helper>
+
+		<!-- 
+			<column/>:
+				[복수 정의 가능] DB의 컬럼 정보, <db_column_info/> 태그 내에서 정의
+				 소스 타입이 rdbms면  기본적으로  데이터 쿼리의 포함된 모든 컬럼이 덤프파일로 생성됨 
+				 소스 타입이 notes면 <column/> 태그에 정의된 컬럼만 덤프파일로 생성
+				- 태그 속성 설명
+					* name : [필수] DB 컬럼명
+					* role : key/index_action/index_time/file_path/file_name/body/nsf_name
+						- key - [필수 ]- 데이터 쿼리결과 내 색인 데이터의 유니크 값을 가진 컬럼, 데이터 쿼리에 "key" role의 컬럼이 포함되어야 함.
+						- index_action - [필수] - 색인 액션을 결정하는 컬럼 (I/U/D: 등록,수정/부분 수정/삭제)
+										키 쿼리/데이터 쿼리결과에 "index_action" role의 컬럼이 포함되지 않아도 정의해야 함.
+						- index_time - 벌커 시작시간을 값으로 갖는 컬럼
+						- file_path - 파일 쿼리 결과 내 물리 파일 경로 저장 컬럼
+						- file_name - 파일 쿼리 결과 내 논리 파일명 (사용자에게 보이는 파일명) 저장 컬럼
+						- body  - 데이터 쿼리결과 내 본문 역할의 컬럼
+						- nsf_name (노츠 전용) - 현재 nsf 명을 값으로 갖는 컬럼 
+						- 위의 경우가 아닌 경우 생락
+					* output : 덤프파일 결과에 포함여부,  yes:포함 / no:포함 안함  (기본값: yes)
+					* removeHtml : html 태그 제거  (기본값: no)
+					* removeSpace : 불필요한 공백(스페이스, 탭, 개행)문자 제거  (기본값: no)
+					* separator : 구분문자 - 조회된 데이터를 구분문자로 split 하여 배열 형태의 값으로 재지정 [주의: 데이터 쿼리결과 내 컬럼만 유효함]
+					* copty_to : 현재 컬럼 값을 명시한 컬럼 또는 컬럼들에 복사
+					* rename_to : 현재 컬럼 명을  명시한 컬럼명으로 변경
+					* query : 컬럼과 관련된 쿼리를 명시, data_query/file_query/none (기본값: data_query)
+						- data_query: 데이터 쿼리의 컬럼임을 의미
+						- file_query: 파일 쿼리의 컬럼임을 의미
+						- none (노츠 전용): 해당 컬럼은 노츠 Doument로 부터 데이터를 읽지 않음. 
+				- 추가 설명
+					* 특정 DB필드를 참조만 하고 덤프파일로 저장하지 않을 경우 role 없이 output="no" 로 설정
+					* "key", "index_action" role을 가진 <column/>은 필수로 정의해야 한다.
+		-->
+		<db_column_info>
+			<!-- 필수 -->
+			<column name="VKEY" role="key" output="no" />
+			<column name="indexAction__" role="index_action" output="no" />
+			<column name="DRECONTENT" role="body" output="yes" />
+			
+			<column name="MATCH_DOC_ACSUSER" output="yes" separator=";" />
+			<column name="MATCH_DOC_ACSORG" output="yes" separator=";" />
+			<column name="MATCH_DOC_ACSGROUP" output="yes" separator=";" />
+			<column name="MATCH_ENTITY_EXTRACT" output="yes" separator=";" />
+			<column name="FILE_DATA_LIST" output="no" />
+			
+			<!-- 파일 관련 -->
+			<column name="DOC_FILEPATH" role="file_path" output="no" query="file_query" />
+			<column name="DOC_FILENAME" role="file_name" output="no" query="file_query" />
+		</db_column_info>
+		
+		<!-- 
+			<field/>:
+				[복수 정의 가능] 검색엔진의 필드 정보, <es_field_info/> 태그 내에서 정의
+				- 태그 속성 설명
+					* name : [필수] 색인 필드명 
+					* role : [필수] file_info/file_data/entity
+						1) file_info - 파일 속성 정보 저장
+						2) file_data - 파일 데이터 정보 저장
+						3) entity - 본문에서 추출된 개체명 정보 저장
+					* index : 색인 여부, yes:색인 / no:색인 안함 (기본값: yes)
+				- 추가 설명
+					* "file_info" 또는 "file_data" role의 <field/>태그가 정의되고 index="yes" 라면 <file_query/>에 정의된 쿼리문이 실행된다.
+					* <field name="..." role="file_data" index="yes" />태그가 정의되면 
+						1) file_helper 클래스에 의해 첨부파일이 다운로드 되고 텍스트를 추출해서 벌크파일에 저장된다.
+					 	2) 컬럼 태그(<column name="..." role="file_path"/>, <column name="..." role="file_name"/>)가 정의되야 한다.
+		-->
+		<es_field_info>
+			<field name="DREFILECONTENT" role="file_data" index="yes" />
+			<field name="MATCH_EXTRACT_ENTITY" role="entity" index="yes" />
+		</es_field_info>
+		
+		<!-- 
+			<data_source/>
+				- 태그 속성 설명
+					* last_doc_indexdate: 최종 수행시간 기록  (벌커 시작시간)
+					* delete_not_indexed: yes:업데이트 되지 않은 색인 문서 삭제 수행함 / no:삭제 수행 안함 (기본값: no)
+						indexMode가 "all"인  경우만 수행						
+			<key_query/>:
+				[필수]전체 색인 대상 조회 쿼리 
+				indexMode가 "all" 경우에 수행
+				- 태그 속성 설명
+					* dataSource: [필수] connect_info 태그의 id 속성 값을 설정
+					* cursor_use: 서버 커서 사용여부 (기본값: no)
+				 - inner text : 실행 쿼리문 정의, <![CDATA[ ]]> 내에 쿼리문 작성
+			<key_inc_query/>: 
+				[필수]증분 색인 대상 조회 쿼리 
+				indexMode가 "inc" 경우에 수행
+				쿼리문에 "#data_source@last_doc_indexdate#"을 명시하면 실행 시 최종 실행일자(<data_source last_doc_indexdate="..."/>) 값으로 대체된다.
+				- 태그 속성 설명
+					* dataSource: [필수] connect_info 태그의 id 속성 값을 설정
+					* cursor_use: 서버 커서 사용여부 (기본값: no)
+				- inner text : 실행 쿼리문 정의, <![CDATA[ ]]> 내에 쿼리문 작성
+			<update_queue_query/>:
+				증분 큐 사용 시 큐 상태 업데이트 쿼리
+				indexMode가 "inc"일 경우만 수행, key query 결과를 쿼리 Parameter로 사용
+				- 태그 속성 설명
+					* dataSource: [필수] connect_info 태그의 id 속성 값을 설정
+				- inner text : 실행 쿼리문 정의, <![CDATA[ ]]> 내에 쿼리문 작성
+				- sql parameter :  ":컬럼명" 으로 sql문에 명시, 여기서 컬럼명은 key query 결과 내 컬럼명
+			<data_query/>:
+				[필수]: 색인 데이터 조회 쿼리,
+				조회 컬럼(alias)이 색인 필드로 자동 맵핑, key query 결과를 쿼리 Parameter로 사용
+				<data_query/>를 생략하면 key_query(전체색인), key_inc_query(증분색인)의 쿼리 결과를 data_query 결과로 사용한다.
+				- 태그 속성 설명
+					* dataSource: [필수] connect_info 태그의 id 속성 값을 설정
+				- inner text : 실행 쿼리문 정의, <![CDATA[ ]]> 내에 쿼리문 작성
+				- sql parameter :  ":컬럼명" 으로 sql문에 명시, 여기서 컬럼명은 key query 결과 내 컬럼명
+			<file_query/>: 
+				첨부파일 정보 조회 쿼리
+				key query 결과를 쿼리 Parameter로 사용
+				<field name="..." role="file_data" index="yes" /> 또는 <field name="..." role="file_data" index="yes" />가 정의 되어야 이 쿼리가 수행됨.
+				- 태그 속성 설명
+					* dataSource: [필수] connect_info 태그의 id 속성 값을 설정
+				- inner text : 실행 쿼리문 정의, <![CDATA[ ]]> 내에 쿼리문 작성
+				- sql parameter :  ":컬럼명" 으로 sql문에 명시, 여기서 컬럼명은 key query 결과 내 컬럼명
+			<etc_query/>:
+				[복수 정의 가능] 추가 쿼리 정의
+				EtcReader 클래스에서 여기 정의한 쿼리를 수행, key query 및 data query 결과를 쿼리 Parameter로 사용 가능
+				- 태그 속성 설명
+					* id: [필수] etc_query의 고유 식별 id
+					* dataSource: [필수] connect_info 태그의 id 속성 값을 설정
+				- inner text : 실행 쿼리문 정의, <![CDATA[ ]]> 내에 쿼리문 작성
+				- sql parameter :  ":컬럼명" 으로 sql문에 명시, 여기서 컬럼명은 key query 또는 data query 결과 내 컬럼명
+		-->
+		<data_source last_doc_indexdate="2023-04-13 09:31:09">
+			<query_info>
+				<key_query dataSource="db_conn1">
+					<![CDATA[
+						SELECT
+							VKEY
+						FROM TB_INDEX_CLOB
+						WHERE JOB_GUBUN = '0'
+						-- AND UPMU_CODE = '1020'
+					]]>
+				</key_query>
+				<key_inc_query dataSource="db_conn1">
+					<![CDATA[
+						SELECT
+							SEQNO
+							, VDKEY as VKEY
+							, DECODE(ACTION, '2', 'D', 'I') as indexAction__
+						FROM TB_INDEX_QUEUE
+						WHERE LOCK_FIELD = '0'
+						-- AND UPMU_CODE = '1020'
+					]]>
+				</key_inc_query>
+				<update_queue_query dataSource="db_conn1">
+					<![CDATA[
+						UPDATE
+							TB_INDEX_QUEUE
+						SET 
+							LOCK_FIELD = '1'
+						WHERE SEQNO = :SEQNO
+					]]>
+				</update_queue_query>
+				<data_query dataSource="db_conn1">
+					<![CDATA[
+						SELECT 
+							VKEY
+							, TRIM(GROUP_CODE) as MATCH_GROUP_CODE
+							, TRIM(UPMU_CODE) as MATCH_UPMU_CODE
+							, TRIM(UPMU_NAME) as MATCH_UPMU_NAME
+							, TRIM(DOC_ID) as MATCH_DOC_ID
+							, TRIM(DOC_TITLE) as INDEX_DOC_TITLE
+							, TRIM(DOC_DATE1) as DATE_DOC_DATE1
+							, TRIM(DOC_DATE2) as DATE_DOC_DATE1
+							, TRIM(DOC_REGID) as MATCH_DOC_REGID
+							, TRIM(DOC_REGNAME) as INDEX_DOC_REGNAME
+							, TRIM(DOC_REGDEPT) as INDEX_DOC_DEPT
+							, TRIM(DOC_ACSUSER) as MATCH_DOC_ACSUSER
+							, TRIM(DOC_ACSORG) as MATCH_DOC_ACSORG
+							, TRIM(DOC_ACSGROUP) as MATCH_DOC_ACSGROUP
+							, DOC_CONTENT as DRECONTENT
+							, DOC_FILEPATH
+							, TRIM(DOC_SUBJECT) as INDEX_DOC_SUBJECT
+							, TRIM(DOC_AUTHORITY) as MATCH_DOC_AUTHORITY
+							, TRIM(DOC_VIEWSCOPE) as MATCH_DOC_VIEWSCOPE
+							, TRIM(DOC_TYPE) as MATCH_DOC_TYPE
+							, TRIM(DOC_NUM) as MATCH_DOC_NUM
+							, DECODE(NVL(DOC_KIND_A,''), '', '', TRIM(DOC_KIND_A) || '_' || TRIM(UPMU_CODE)) as PARAMETRIC_DOC_KIND_A
+							, DECODE(NVL(DOC_KIND_B,''), '', '', TRIM(DOC_KIND_B) || '_' || TRIM(UPMU_CODE)) as PARAMETRIC_DOC_KIND_B
+							, DECODE(NVL(DOC_KIND_C,''), '', '', TRIM(DOC_KIND_C) || '_' || TRIM(UPMU_CODE)) as PARAMETRIC_DOC_KIND_C
+							, DECODE(NVL(DOC_YOSO_A,''), '', '', TRIM(DOC_YOSO_A) || '_' || TRIM(UPMU_CODE)) as PARAMETRIC_DOC_YOSO_A
+							, DECODE(NVL(DOC_YOSO_B,''), '', '', TRIM(DOC_YOSO_B) || '_' || TRIM(UPMU_CODE)) as PARAMETRIC_DOC_YOSO_B
+							, DECODE(NVL(DOC_YOSO_C,''), '', '', TRIM(DOC_YOSO_C) || '_' || TRIM(UPMU_CODE)) as PARAMETRIC_DOC_YOSO_C
+							, DECODE(NVL(DOC_SOURCE_A,''), '', '', TRIM(DOC_SOURCE_A) || '_' || TRIM(UPMU_CODE)) as PARAMETRIC_DOC_SOURCE_A
+							, DECODE(NVL(DOC_SOURCE_B,''), '', '', TRIM(DOC_SOURCE_B) || '_' || TRIM(UPMU_CODE)) as PARAMETRIC_DOC_SOURCE_B
+							, DECODE(NVL(DOC_SOURCE_C,''), '', '', TRIM(DOC_SOURCE_C) || '_' || TRIM(UPMU_CODE)) as PARAMETRIC_DOC_SOURCE_C
+							, DECODE(NVL(DOC_REGION_A,''), '', '', TRIM(DOC_REGION_A) || '_' || TRIM(UPMU_CODE)) as PARAMETRIC_DOC_REGION_A
+							, DECODE(NVL(DOC_REGION_B,''), '', '', TRIM(DOC_REGION_B) || '_' || TRIM(UPMU_CODE)) as PARAMETRIC_DOC_REGION_B
+							, DECODE(NVL(DOC_REGION_C,''), '', '', TRIM(DOC_REGION_C) || '_' || TRIM(UPMU_CODE)) as PARAMETRIC_DOC_REGION_C
+							, SUBSTR(DOC_DATE1,0,4) as PARAMETRIC_YEAR
+							, SUBSTR(DOC_DATE1,0,6) as PARAMETRIC_MONTH
+							, DOC_RESERVE_1 as INDEX_DOC_RESERVE_1
+							, DOC_RESERVE_2 as INDEX_DOC_RESERVE_2
+							, DOC_RESERVE_3 as INDEX_DOC_RESERVE_3
+							, DOC_RESERVE_4 as INDEX_DOC_RESERVE_4
+							, DOC_RESERVE_5 as INDEX_DOC_RESERVE_5
+							, DOC_RESERVE_6 as INDEX_DOC_RESERVE_6
+							, DOC_RESERVE_7 as INDEX_DOC_RESERVE_7
+							, DOC_RESERVE_8 as INDEX_DOC_RESERVE_8
+							, DOC_RESERVE_9 as INDEX_DOC_RESERVE_9
+							, DOC_RESERVE_10 as INDEX_DOC_RESERVE_10
+							, DOC_ORGIN_FILEPATH as DOC_ORGIN_FILEPATH
+							, DOC_TITLE_SORT as SORT_DOC_TITLE
+						FROM TB_INDEX_CLOB
+						WHERE JOB_GUBUN = '0'
+						AND VKEY = :VKEY
+					]]>
+				</data_query>
+				<etc_query id="content_query" dataSource="db_conn1">
+					<![CDATA[
+						SELECT 
+							VKEY
+							, DOC_CONTENT as DRECONTENT 
+						FROM TB_INDEX_CLOB
+						WHERE JOB_GUBUN = '0'
+						AND VKEY = :VKEY
+					]]>
+				</etc_query>
+			</query_info>
+		</data_source>
+	</source>
+</definition>

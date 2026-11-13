@@ -1,0 +1,726 @@
+# 템플릿 생성
+PUT _template/template_idx_02
+{
+	"order" : 0,
+	"index_patterns" : [
+		"idx_02_*"
+	],
+	"settings" : {
+		"index" : {
+			"max_ngram_diff" : "50",
+			"analysis" : {
+				"filter" : {
+					"stop_filtering" : {
+						"type" : "stop",
+						"stopwords_path" : "dict/STOP.txt"
+					},
+					"synonym_filter" : {
+						"type" : "synonym_graph",
+						"updateable" : "true",
+						"synonyms_path" : "dict/SYNO.txt",
+						"lenient" : "true"
+					},
+					"edge_ngram_filter_front" : {
+						"min_gram" : "1",
+						"side" : "front",
+						"type" : "edge_ngram",
+						"max_gram" : "64"
+					},
+					"javacafe_chosung_filter" : {
+						"type" : "javacafe_chosung"
+					},
+					"javacafe_jamo_filter" : {
+						"type" : "javacafe_jamo"
+					},
+					"nori_posfilter" : {
+						"type" : "nori_part_of_speech",
+						"stoptags" : [
+							"E",
+							"IC",
+							"J",
+							"MAG",
+							"MAJ",
+							"MM",
+							"NA",
+							"SC",
+							"SE",
+							"SF",
+							"SP",
+							"SSC",
+							"SSO",
+							"SY",
+							"UNA",
+							"UNKNOWN",
+							"VA",
+							"VCN",
+							"VCP",
+							"VSV",
+							"VV",
+							"VX",
+							"XSA"
+						]
+					},
+					"auto_complete_filter" : {
+						"type" : "ngram",
+						"min_gram" : "1",
+						"max_gram" : "50"
+					}
+				},
+				"char_filter" : {
+					"auto_complete_space_filter" : {
+						"pattern" : """(\s)""",
+						"type" : "pattern_replace",
+						"replacement" : ""
+					},
+					"remove_whitespace" : {
+						"pattern" : """\s+""",
+						"type" : "pattern_replace",
+						"replacement" : ""
+					},
+					"remove_special_chars2" : {
+						"type" : "mapping",
+						"mappings" : [
+							"① => ",
+							"② => ",
+							"③ => ",
+							"④ => ",
+							"⑤ => ",
+							"⑥ => ",
+							"⑦ => ",
+							"⑧ => ",
+							"⑨ => ",
+							"⑩ => ",
+							"Ⅰ => ",
+							"Ⅱ => ",
+							"Ⅲ => ",
+							"Ⅳ => ",
+							"Ⅴ => ",
+							"Ⅵ => ",
+							"Ⅶ => ",
+							"Ⅷ => ",
+							"Ⅸ => ",
+							"Ⅹ => "
+						]
+					},
+					"remove_special_chars" : {
+						"pattern" : """[^\w\s가-힣]""",
+						"type" : "pattern_replace",
+						"replacement" : " "
+					}
+				},
+				"analyzer" : {
+					"chosung_index_analyzer" : {
+						"filter" : [
+							"javacafe_chosung_filter",
+							"lowercase",
+							"trim",
+							"edge_ngram_filter_front"
+						],
+					"char_filter" : [
+						"remove_whitespace"
+					],
+					"type" : "custom",
+					"tokenizer" : "keyword"
+				},
+				"eng2kor_analyzer" : {
+					"filter" : [
+						"javacafe_jamo_filter",
+						"lowercase",
+						"edge_ngram_filter_front"
+					],
+					"char_filter" : [
+						"remove_whitespace"
+					],
+					"type" : "custom",
+					"tokenizer" : "keyword"
+				},
+				"ngram_analyzer" : {
+					"filter" : [
+						"lowercase"
+					],
+					"char_filter" : [
+						"remove_whitespace"
+					],
+					"tokenizer" : "ngram_tokenizer"
+				},
+				"nori_analyzer" : {
+					"filter" : [
+						"nori_posfilter",
+						"lowercase",
+						"snowball"
+					],
+					"type" : "custom",
+					"tokenizer" : "nori_user_dict"
+				},
+				"eng2kor_search_analyzer" : {
+					"filter" : [
+						"javacafe_eng2kor",
+						"javacafe_jamo_filter",
+						"lowercase"
+					],
+					"char_filter" : [
+						"remove_whitespace"
+					],
+					"type" : "custom",
+					"tokenizer" : "standard"
+				},
+				"ngram_search_analyzer" : {
+					"filter" : [
+						"lowercase"
+					],
+					"char_filter" : [
+						"remove_whitespace"
+					],
+					"tokenizer" : "standard"
+				},
+				"kor2eng_analyzer" : {
+					"filter" : [
+						"trim",
+						"lowercase",
+						"javacafe_kor2eng"
+					],
+					"type" : "custom",
+					"tokenizer" : "standard"
+				},
+				"edge_ngram_analyzer" : {
+					"filter" : [
+						"javacafe_jamo_filter",
+						"lowercase",
+						"trim",
+						"edge_ngram_filter_front"
+					],
+					"char_filter" : [
+						"remove_special_chars",
+						"remove_whitespace"
+					],
+					"type" : "custom",
+					"tokenizer" : "edge_ngram_tokenizer"
+				},
+				"nori_search_analyzer" : {
+					"filter" : [
+						"lowercase",
+						"synonym_filter",
+						"nori_posfilter",
+						"snowball",
+						"stop_filtering"
+					],
+					"type" : "custom",
+					"tokenizer" : "nori_user_dict"
+				},
+				"chosung_search_analyzer" : {
+					"filter" : [
+						"javacafe_chosung_filter",
+						"lowercase",
+						"trim"
+					],
+					"char_filter" : [
+						"remove_whitespace"
+					],
+					"type" : "custom",
+					"tokenizer" : "keyword"
+				},
+				"edge_ngram_search_analyzer" : {
+					"filter" : [
+						"javacafe_jamo_filter",
+						"lowercase",
+						"trim"
+					],
+					"char_filter" : [
+						"remove_special_chars",
+						"remove_whitespace"
+					],
+					"type" : "custom",
+					"tokenizer" : "keyword"
+				}
+			},
+			"tokenizer" : {
+				"nori_user_dict" : {
+					"type" : "nori_tokenizer",
+					"user_dictionary" : "dict/USER.txt",
+					"decompound_mode" : "mixed"
+				},
+				"edge_ngram_tokenizer" : {
+					"token_chars" : [
+						"letter",
+						"digit",
+						"punctuation",
+						"symbol"
+					],
+					"min_gram" : "1",
+					"type" : "edge_ngram",
+					"max_gram" : "64"
+				},
+				"ngram_tokenizer" : {
+					"token_chars" : [
+						"letter",
+						"digit",
+						"whitespace"
+					],
+					"type" : "ngram",
+					"max_gram" : "10"
+				}
+			}
+		},
+		"number_of_shards" : "3",
+		"number_of_replicas" : "0"
+		}
+	},
+	"mappings" : {
+		"properties" : {
+			"upd_dtm" : {
+				"type" : "date"
+			},
+			"url_link" : {
+				"index" : "false",
+				"type" : "text"
+			},
+			"updator_nm" : {
+				"type" : "text",
+				"fields" : {
+					"ngram" : {
+						"search_analyzer" : "ngram_search_analyzer",
+						"analyzer" : "ngram_analyzer",
+						"type" : "text"
+					}
+				}
+			},
+			"reg_dtm" : {
+				"type" : "date"
+			},
+			"title" : {
+				"search_analyzer" : "nori_search_analyzer",
+				"analyzer" : "nori_analyzer",
+				"type" : "text",
+				"fields" : {
+					"cho" : {
+						"search_analyzer" : "chosung_search_analyzer",
+						"analyzer" : "chosung_index_analyzer",
+						"type" : "text"
+					},
+					"ngram" : {
+						"search_analyzer" : "ngram_search_analyzer",
+						"analyzer" : "ngram_analyzer",
+						"type" : "text"
+					}
+				}
+			},
+			"content" : {
+				"search_analyzer" : "nori_search_analyzer",
+				"analyzer" : "nori_analyzer",
+				"type" : "text"
+			},
+			"updator_dept" : {
+				"type" : "text",
+				"fields" : {
+					"ngram" : {
+						"search_analyzer" : "ngram_search_analyzer",
+						"analyzer" : "ngram_analyzer",
+						"type" : "text"
+					}
+				}
+			},
+			"indexed_dtm" : {
+				"type" : "date"
+			},
+			"writer_nm" : {
+				"type" : "text",
+				"fields" : {
+					"ngram" : {
+						"search_analyzer" : "ngram_search_analyzer",
+						"analyzer" : "ngram_analyzer",
+						"type" : "text"
+					}
+				}
+			},
+			"attach_body" : {
+				"search_analyzer" : "nori_search_analyzer",
+				"analyzer" : "nori_analyzer",
+				"type" : "text"
+			},
+			"attach_url_01" : {
+				"index" : false,
+				"type" : "text"
+			},
+			"writer_dept" : {
+				"type" : "text",
+				"fields" : {
+					"ngram" : {
+						"search_analyzer" : "ngram_search_analyzer",
+						"analyzer" : "ngram_analyzer",
+						"type" : "text"
+					}
+				}
+			},
+			"attach_url_02" : {
+				"index" : false,
+				"type" : "text"
+			},
+			"attach_info" : {
+				"properties" : {
+					"attach_ext" : {
+						"type" : "keyword"
+					},
+					"attach_nm" : {
+						"search_analyzer" : "nori_search_analyzer",
+						"analyzer" : "nori_analyzer",
+						"type" : "text"
+					}
+				}
+			},
+			"acl_02" : {
+				"type" : "keyword"
+			},
+			"acl_01" : {
+				"type" : "keyword"
+			}
+		}
+	},
+	"aliases" : { }
+}
+
+
+
+# 템플릿 생성
+PUT _template/template_idx_03
+{
+	"order" : 0,
+	"index_patterns" : [
+		"idx_03_*"
+	],
+	"settings" : {
+		"index" : {
+			"max_ngram_diff" : "50",
+			"analysis" : {
+				"filter" : {
+					"stop_filtering" : {
+						"type" : "stop",
+						"stopwords_path": "dict/STOP.txt"
+					},
+					"synonym_filter" : {
+						"type" : "synonym_graph",
+						"updateable" : "true",
+						"synonyms_path": "dict/SYNO.txt",
+						"lenient": "true"
+					},
+					"edge_ngram_filter_front" : {
+						"min_gram" : "1",
+						"side" : "front",
+						"type" : "edge_ngram",
+						"max_gram" : "64"
+					},
+					"javacafe_chosung_filter" : {
+						"type" : "javacafe_chosung"
+					},
+					"javacafe_jamo_filter" : {
+						"type" : "javacafe_jamo"
+					},
+					"nori_posfilter" : {
+						"type" : "nori_part_of_speech",
+						"stoptags" : [
+							"E",
+							"IC",
+							"J",
+							"MAG",
+							"MAJ",
+							"MM",
+							"NA",
+							"SC",
+							"SE",
+							"SF",
+							"SP",
+							"SSC",
+							"SSO",
+							"SY",
+							"UNA",
+							"UNKNOWN",
+							"VA",
+							"VCN",
+							"VCP",
+							"VSV",
+							"VV",
+							"VX",
+							"XSA"
+						]
+					},
+					"auto_complete_filter" : {
+						"type" : "ngram",
+						"min_gram" : "1",
+						"max_gram" : "50"
+					}
+				},
+				"char_filter" : {
+					"auto_complete_space_filter" : {
+						"pattern" : """(\s)""",
+						"type" : "pattern_replace",
+						"replacement" : ""
+					},
+					"remove_whitespace" : {
+						"pattern" : """\s+""",
+						"type" : "pattern_replace",
+						"replacement" : ""
+					},
+					"remove_special_chars2" : {
+						"type" : "mapping",
+						"mappings" : [
+							"① => ",
+							"② => ",
+							"③ => ",
+							"④ => ",
+							"⑤ => ",
+							"⑥ => ",
+							"⑦ => ",
+							"⑧ => ",
+							"⑨ => ",
+							"⑩ => ",
+							"Ⅰ => ",
+							"Ⅱ => ",
+							"Ⅲ => ",
+							"Ⅳ => ",
+							"Ⅴ => ",
+							"Ⅵ => ",
+							"Ⅶ => ",
+							"Ⅷ => ",
+							"Ⅸ => ",
+							"Ⅹ => "
+						]
+					},
+					"remove_special_chars" : {
+						"pattern" : """[^\w\s가-힣]""",
+						"type" : "pattern_replace",
+						"replacement" : " "
+					}
+				},
+				"analyzer" : {
+					"chosung_index_analyzer" : {
+						"filter" : [
+							"javacafe_chosung_filter",
+							"lowercase",
+							"trim",
+							"edge_ngram_filter_front"
+						],
+						"char_filter" : [
+							"remove_whitespace"
+						],
+						"type" : "custom",
+						"tokenizer" : "keyword"
+					},
+					"eng2kor_analyzer" : {
+						"filter" : [
+							"javacafe_jamo_filter",
+							"lowercase",
+							"edge_ngram_filter_front"
+						],
+						"char_filter" : [
+							"remove_whitespace"
+						],
+						"type" : "custom",
+						"tokenizer" : "keyword"
+					},
+					"ngram_analyzer" : {
+						"filter" : [
+							"lowercase"
+						],
+						"char_filter" : [
+							"remove_whitespace"
+						],
+						"tokenizer" : "ngram_tokenizer"
+					},
+					"nori_analyzer" : {
+						"filter" : [
+							"nori_posfilter",
+							"lowercase",
+							"snowball"
+						],
+						"type" : "custom",
+						"tokenizer" : "nori_user_dict"
+					},
+					"eng2kor_search_analyzer" : {
+						"filter" : [
+							"javacafe_eng2kor",
+							"javacafe_jamo_filter",
+							"lowercase"
+						],
+						"char_filter" : [
+							"remove_whitespace"
+						],
+						"type" : "custom",
+						"tokenizer" : "standard"
+					},
+					"ngram_search_analyzer" : {
+						"filter" : [
+							"lowercase"
+						],
+						"char_filter" : [
+							"remove_whitespace"
+						],
+						"tokenizer" : "standard"
+					},
+					"kor2eng_analyzer" : {
+						"filter" : [
+							"trim",
+							"lowercase",
+							"javacafe_kor2eng"
+						],
+						"type" : "custom",
+						"tokenizer" : "standard"
+					},
+					"edge_ngram_analyzer" : {
+						"filter" : [
+							"javacafe_jamo_filter",
+							"lowercase",
+							"trim",
+							"edge_ngram_filter_front"
+						],
+						"char_filter" : [
+							"remove_special_chars",
+							"remove_whitespace"
+						],
+						"type" : "custom",
+						"tokenizer" : "edge_ngram_tokenizer"
+					},
+					"nori_search_analyzer" : {
+						"filter" : [
+							"lowercase",
+							"synonym_filter",
+							"nori_posfilter",
+							"snowball",
+							"stop_filtering"
+						],
+						"type" : "custom",
+						"tokenizer" : "nori_user_dict"
+					},
+					"chosung_search_analyzer" : {
+						"filter" : [
+							"javacafe_chosung_filter",
+							"lowercase",
+							"trim"
+						],
+						"char_filter" : [
+							"remove_whitespace"
+						],
+						"type" : "custom",
+						"tokenizer" : "keyword"
+					},
+					"edge_ngram_search_analyzer" : {
+						"filter" : [
+							"javacafe_jamo_filter",
+							"lowercase",
+							"trim"
+						],
+						"char_filter" : [
+							"remove_special_chars",
+							"remove_whitespace"
+						],
+						"type" : "custom",
+						"tokenizer" : "keyword"
+					}
+				},
+				"tokenizer" : {
+					"nori_user_dict" : {
+						"type" : "nori_tokenizer",
+						"user_dictionary": "dict/USER.txt",
+						"decompound_mode" : "mixed"
+					},
+					"edge_ngram_tokenizer" : {
+						"token_chars" : [
+							"letter",
+							"digit",
+							"punctuation",
+							"symbol"
+						],
+						"min_gram" : "1",
+						"type" : "edge_ngram",
+						"max_gram" : "64"
+					},
+					"ngram_tokenizer" : {
+						"token_chars" : [
+							"letter",
+							"digit",
+							"whitespace"
+						],
+						"type" : "ngram",
+						"max_gram" : "10"
+					}
+				}
+			},
+			"number_of_shards" : "3",
+			"number_of_replicas" : "0"
+		}
+	},
+	"mappings" : {
+		"properties" : {
+			"dept_nm" : {
+				"type" : "text",
+				"fields" : {
+					"ngram" : {
+						"search_analyzer" : "ngram_search_analyzer",
+						"analyzer" : "ngram_analyzer",
+						"type" : "text"
+					}
+				}
+			},
+			"person_nm" : {
+				"type" : "text",
+				"fields" : {
+					"ngram" : {
+						"search_analyzer" : "ngram_search_analyzer",
+						"analyzer" : "ngram_analyzer",
+						"type" : "text"
+					}
+				}
+			},
+			"enroll_dtm" : {
+				"type" : "date"
+			},
+			"indexed_dtm" : {
+				"type" : "date"
+			},
+			"url_link" : {
+				"index" : "false",
+				"type" : "text"
+			}
+		}
+	},
+	"aliases" : { }
+}
+
+
+
+# 인덱스 삭제
+DELETE idx_02_boards_1
+DELETE idx_02_eapproval_1
+DELETE idx_03_people_1
+
+
+
+# 인덱스 생성
+PUT idx_02_boards_1
+PUT idx_02_eapproval_1
+PUT idx_03_people_1
+
+
+
+#얼리어스 등록
+POST /_aliases
+{
+	"actions": [
+		{
+			"add": {
+				"index": "idx_02_boards_1",
+				"alias": "idx_02_boards"
+			}
+		}
+		,{
+			"add": {
+				"index": "idx_02_eapproval_1",
+				"alias": "idx_02_eapproval"
+			}
+		}
+		,{
+			"add": {
+				"index": "idx_03_people_1",
+				"alias": "idx_03_people"
+			}
+		}
+	]
+}

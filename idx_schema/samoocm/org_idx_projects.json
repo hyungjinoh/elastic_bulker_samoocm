@@ -1,0 +1,83 @@
+{
+  "settings": {
+    "number_of_shards": 1,
+    "number_of_replicas": 1,
+    "index.default_pipeline": "idx_projects_date_pipeline",
+    "analysis": {
+      "tokenizer": {
+        "nori_mixed_tokenizer": { "type": "nori_tokenizer", "decompound_mode": "mixed" },
+        "nori_none_tokenizer": { "type": "nori_tokenizer", "decompound_mode": "none" }
+      },
+      "filter": {
+        "nori_pos_filter": {
+          "type": "nori_part_of_speech",
+          "stoptags": [
+            "E", "IC", "J", "MAG", "MAJ", "MM", "SP", "SSC", "SSO", "SC", "SE",
+            "XPN", "XSA", "XSN", "XSV", "UNA", "NA", "VSV", "VCP", "VCN"
+          ]
+        }
+      },
+      "analyzer": {
+        "korean_index": {
+          "type": "custom",
+          "tokenizer": "nori_mixed_tokenizer",
+          "filter": ["nori_pos_filter", "lowercase"]
+        },
+        "korean_search": {
+          "type": "custom",
+          "tokenizer": "nori_none_tokenizer",
+          "filter": ["nori_pos_filter", "lowercase"]
+        }
+      }
+    }
+  },
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "project_id": { "type": "keyword" },
+      "docid": { "type": "keyword" },
+      "project_no": { "type": "keyword" },
+
+      "mis_name": {
+        "type": "text",
+        "analyzer": "korean_index",
+        "search_analyzer": "korean_search",
+        "fields": {
+          "keyword": { "type": "keyword", "ignore_above": 512 }
+        }
+      },
+
+      "project_status": { "type": "keyword" },
+      "project_gubun": { "type": "keyword" },
+      "progress": { "type": "keyword" },
+      "save_status": { "type": "keyword" },
+      "security_level": { "type": "keyword" },
+
+      "department_pm_id": { "type": "keyword" },
+      "department_pm_nm": {
+        "type": "text",
+        "analyzer": "korean_index",
+        "search_analyzer": "korean_search",
+        "fields": {
+          "keyword": { "type": "keyword", "ignore_above": 256 }
+        }
+      },
+
+      "user_id": { "type": "keyword" },
+      "user_name": {
+        "type": "text",
+        "analyzer": "korean_index",
+        "search_analyzer": "korean_search",
+        "fields": {
+          "keyword": { "type": "keyword", "ignore_above": 256 }
+        }
+      },
+
+      "folder_id": { "type": "keyword" },
+
+      "created_date": { "type": "date", "format": "strict_date_optional_time" },
+      "last_modified_date": { "type": "date", "format": "strict_date_optional_time" },
+      "indexed_dtm": { "type": "date", "format": "strict_date_optional_time" }
+    }
+  }
+}

@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definition>
+	<!-- 
+	 	<target/>:
+			[필수] 대상 정보 
+	 		- 태그 속성 설명
+	 			* index_name: [필수] 검색엔진 내 색인명
+	 	<result_file/>:
+			[필수] 최종적으로 저장된는 덤프파일 정보
+	 		- 태그 속성 설명
+	 			* file_name: [필수] 덤프파일의 베이스명
+	 			* max_rows: [필수] 한 덤프파일 당 저장되는 최대 로우 수
+	 -->
+	 	
+	<target index_name="idx_notes_sample">
+		<result_file file_name="idx_notes_sample" max_rows="100" />
+	</target>
+
+	<!--
+		<source/>: 
+			[필수] 
+			- 태그 속성 설명
+			 	* type: notes 또는 rdbms (기본값: rdbms) 
+	 -->
+	<source type="notes">
+		<!-- 
+			<connect_info/>:
+				[필수][복수 정의 가능] 노츠서버  접속정보
+				- 태그 속성 설명
+					* id: 접속정보의 유니크 id, 아래 정의 되는 <nsf/>태그들의 dataSource 속성 값은 이 id값을 명시한다.
+				- inner tag (source type="notes")
+					<url/>: [필수] jdbc url 
+					<username/>: [필수] 접속 계정
+					<password/>: [필수] 패스워드
+		 -->
+		<connect_info id="db_conn2">
+			<url>172.18.10.22:63148</url>
+			<username>schadmin</username>
+			<password>ENC(CHANGE_ME)</password>
+		</connect_info>
+		
+		<connect_info id="db_conn1">
+			<url>172.18.10.26:63148</url>
+			<username>schadmin</username>
+			<password>ENC(CHANGE_ME)</password>
+		</connect_info>
+		
+		<!-- 
+			<nsf_list/>: (노츠전용) nsf 파일 목록을 정의 
+				- 태그 속성 설명
+	 				* file_path: 목록을 정의한 파일 경로를 지정 (이 속성을 정의하면 하위태그 <nsf/>를 지정할 수 없음)
+	 				* 노츠목록 파일 내용 샘플
+					{
+					  "nsf_list": [
+					    {
+					      "dataSource": "db_conn1",
+					      "name": "egate/global/eap1/aprv/repository/doc/repository20242.nsf"
+					    },
+					    {
+					      "dataSource": "db_conn1", 
+					      "name": "egate/global/eap1/aprv/repository/doc/repository20243.nsf"
+					    }
+					  ]
+					}
+	 			- inner tag
+	 				<nsf/>: (노츠전용) nsf 파일 정보를 정의
+	 					- 태그속성 설명
+	 						* dataSource: <connect_info/> 태그의 id값을 정의
+	 					- inner text : nsf 파일 경로 정보 
+	 	-->
+		<nsf_list file_path="D:\data\eclipse-ws-elastic2\elastic_bulker\df\notes_sample_list.txt">
+			<!-- nsf dataSource="db_conn1">egate/global/eap1/aprv/repository/doc/repository20242.nsf</nsf>
+			<nsf dataSource="db_conn1">egate/global/eap1/aprv/repository/doc/repository20243.nsf</nsf-->
+		</nsf_list>
+
+		<!-- 
+			<bulker_service/>: 
+				벌커의 메인 서비스
+				태그를 정의하지 않으면 기본 클래스가 실행된다. (기본값: com.rayful.bulk.service.es.BulkerNotesService)
+				BulkerNotesSerivce (elastic)를 상속해서 커스텀 클래스 생성 가능
+				- 태그 속성 설명
+	 				* class_name: [필수] 실행 클래스명 
+			<index_service/>: 
+				검색엔진 API를 이용하여 벌크파일의 색인 요청, 응답 결과에 따라 벌크파일을 "_success", "_fail" 폴더로 이동
+				IndexService (elastic) 혹은 Index4S42Service (search42)를 상속해서 커스텀 클래스 생성 가능
+				- 태그 속성 설명
+					* use: 커스텀 클래스 실행 여부 (기본값: yes)
+					* class_name: [필수] 실행 클래스명
+			<etc_reader/>: 
+				벌커 메인 쿼리외에 추가 쿼리를 수행해야 할 경우 사용 
+				BaseEtcReader를 상속해서 executeEtc 메서드를 구현한 클래스를 생성해야함.
+				BulkerService에서 이 클래스를 생성해서 파일 처리 시 사용 
+				- 태그 속성 설명
+					* use: 커스텀 클래스 실행 여부 (기본값: yes)
+					* class_name: [필수] 실행 클래스명
+			<bulker_crypt/>: 
+				DF내  계정/패스워드 정보 암호화하여 기록 시  디코딩을 위한 클래스
+				BulkerBaseCrypt(jcrpty 라이브리러 사용)를 상속받은 커스텀 클래스 생성 가능
+				jdbcDAO, NotesDAO에서 이 클래스를 생성해서 암복호화에 사용
+				- 태그 속성 설명
+					* use: 커스텀 클래스 실행 여부 (기본값: yes)
+					* class_name: [필수] 실행 클래스명
+			<etc_processor/>:
+				벌커 메인 로직 수행 전/후로 처리해야할 작업수행하는 사용
+				BaseEtcProcessor를 상속해서 preProcess, postProcess 메서드를 구현한 클래스를 생성해야함.
+				- 태그 속성 설명
+					* use: 커스텀 클래스 실행 여부 (기본값: yes)
+					* class_name: [필수] 실행 클래스명	
+		 -->
+		<bulker_service class_name="com.rayful.bulk.service.es.BulkerNotesService" />
+		<index_service use="yes" class_name="com.rayful.bulk.service.es.IndexService" />
+		<etc_processor use="no" class_name="com.rayful.bulk.service.SampleEtcProcessor" />
+
+		<!-- 
+			<column/>:
+				[복수 정의 가능] DB의 컬럼 정보, <db_column_info/> 태그 내에서 정의
+				 소스 타입이 rdbms면  기본적으로  데이터 쿼리의 포함된 모든 컬럼이 덤프파일로 생성됨 
+				 소스 타입이 notes면 <column/> 태그에 정의된 컬럼만 덤프파일로 생성
+				- 태그 속성 설명
+					* name : [필수] DB 컬럼명
+					* role : key/index_action/index_time/file_path/file_name/body/nsf_name
+						- key - [필수 ]- 데이터 쿼리결과 내 색인 데이터의 유니크 값을 가진 컬럼, 데이터 쿼리에 "key" role의 컬럼이 포함되어야 함.
+						- index_action - [필수] - 색인 액션을 결정하는 컬럼 (I/U/D: 등록,수정/부분 수정/삭제)
+										키 쿼리/데이터 쿼리결과에 "index_action" role의 컬럼이 포함되지 않아도 정의해야 함.
+						- index_time - 벌커 시작시간을 값으로 갖는 컬럼
+						- file_path - 파일 쿼리 결과 내 물리 파일 경로 저장 컬럼
+						- file_name - 파일 쿼리 결과 내 논리 파일명 (사용자에게 보이는 파일명) 저장 컬럼
+						- body  - 데이터 쿼리결과 내 본문 역할의 컬럼
+						- nsf_name (노츠 전용) - 현재 nsf 명을 값으로 갖는 컬럼 
+						- 위의 경우가 아닌 경우 생락
+					* output : 덤프파일 결과에 포함여부,  yes:포함 / no:포함 안함  (기본값: yes)
+					* removeHtml : html 태그 제거  (기본값: no)
+					* removeSpace : 불필요한 공백(스페이스, 탭, 개행)문자 제거  (기본값: no)
+					* separator : 구분문자 - 조회된 데이터를 구분문자로 split 하여 배열 형태의 값으로 재지정 [주의: 데이터 쿼리결과 내 컬럼만 유효함]
+					* copty_to : 현재 컬럼 값을 명시한 컬럼 또는 컬럼들에 복사
+					* rename_to : 현재 컬럼 명을  명시한 컬럼명으로 변경
+					* query : 컬럼과 관련된 쿼리를 명시, data_query/file_query/none (기본값: data_query)
+						- data_query: 데이터 쿼리의 컬럼임을 의미
+						- file_query: 파일 쿼리의 컬럼임을 의미
+						- none (노츠 전용): 해당 컬럼은 노츠 Doument로 부터 데이터를 읽지 않음. 
+				- 추가 설명
+					* 특정 DB필드를 참조만 하고 덤프파일로 저장하지 않을 경우 role 없이 output="no" 로 설정
+					* "key", "index_action" role을 가진 <column/>은 필수로 정의해야 한다.
+		-->
+		<db_column_info>
+			<!-- 필수 -->
+			<column name="UniqueKey" role="key" output="no" copy_to="docid" />
+			<column name="indexAction__" role="index_action" output="no" query="none" />
+			
+			<column name="nsf_name" role="nsf_name" query="none" />
+			<column name="Subject" rename_to="title" copy_to="aaa, bbb, ccc" />
+			<column name="Body" rename_to="content" />
+			<column name="insert_dtm" role="index_time" query="none" />
+		</db_column_info>
+		
+		<!-- 
+			<field/>:
+				[복수 정의 가능] 검색엔진의 필드 정보, <es_field_info/> 태그 내에서 정의
+				- 태그 속성 설명
+					* name : [필수] 색인 필드명 
+					* role : [필수] file_info/file_data/entity
+						1) file_info - 파일 속성 정보 저장
+						2) file_data - 파일 데이터 정보 저장
+						3) entity - 본문에서 추출된 개체명 정보 저장
+					* index : 색인 여부, yes:색인 / no:색인 안함 (기본값: yes)
+				- 추가 설명
+					* "file_info" 또는 "file_data" role의 <field/>태그가 정의되고 index="yes" 라면 <file_query/>에 정의된 쿼리문이 실행된다.
+					* <field name="..." role="file_data" index="yes" />태그가 정의되면 
+						1) file_helper 클래스에 의해 첨부파일이 다운로드 되고 텍스트를 추출해서 벌크파일에 저장된다.
+					 	2) 컬럼 태그(<column name="..." role="file_path"/>, <column name="..." role="file_name"/>)가 정의되야 한다.
+		-->
+		<es_field_info>
+			<field name="attach_info" role="file_info" index="yes" />
+			<!-- field name="DREFILECONTENT" role="file_data" index="no" /-->
+		</es_field_info>
+		
+		<!--
+			<data_source/>
+				- 태그 속성 설명
+					* last_doc_indexdate: 최종 수행시간 기록  (벌커 시작시간)
+					* delete_not_indexed: yes:업데이트 되지 않은 색인 문서 삭제 수행함/ no:삭제 수행 안함 (기본값: no)
+						indexMode가 "all"인  경우만 수행	
+			<key_query/>:
+				[필수]전체 색인 대상 조회 쿼리 
+				indexMode가 "all" 경우에 수행
+				소스타입이 rdbms인 경우와 다르게 dataSource 태그는 사용하지 않는다. (접속 정보가 nsf_list에 정의된 nsf 정보를 순차적으로 변경)
+				 - inner text : 실행 쿼리문 정의, <![CDATA[ ]]> 내에 쿼리문 작성
+			<key_inc_query/>: 
+				[필수]증분 색인 대상 조회 쿼리 
+				indexMode가 "inc" 경우에 수행
+				소스타입이 rdbms인 경우와 다르게 dataSource 태그는 사용하지 않는다. (접속 정보가 nsf_list에 정의된 nsf 정보를 순차적으로 변경)
+				쿼리문에 "#data_source@last_doc_indexdate#"을 명시하면 실행 시 최종 실행일자(<data_source last_doc_indexdate="..."/>) 값으로 대체된다.
+				- 태그 속성 설명
+				- inner text : 실행 쿼리문 정의, <![CDATA[ ]]> 내에 쿼리문 작성
+		-->
+		<data_source last_doc_indexdate="2024-09-02 15:19:11" delete_not_indexed="yes">
+			<query_info>
+				<key_query>
+					<![CDATA[
+						SELECT Form='approve'
+					]]>
+				</key_query>
+				<key_inc_query>
+					<![CDATA[
+						SELECT Form='approve' & ModifiedDateTime >= @TextToTime(#data_source@last_doc_indexdate#)
+					]]>
+				</key_inc_query>
+			</query_info>
+		</data_source>
+	</source>
+</definition>

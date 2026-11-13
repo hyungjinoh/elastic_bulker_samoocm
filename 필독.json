@@ -1,0 +1,30 @@
+elastic_bulker 사용시 수정해야할 사항
+** 인텔리제이에서 최초세팅시
+   lib 및 resource 폴더에서, 마우스 우클릭, Mark Directory as --> Resourses Root 로 설정필요
+
+*** 실행시 반드시 환경변수 세팅필요
+  export BULKER_CRYPT_PASSWORD='wooribank' 등록해야함.
+
+
+1.관리자 배치로그(DB)를 지금은 안 쓰는 경우 (가장 빠른 해결) 아래와 같이 변경
+    BULKER.ADMIN.LOG.USE=no
+
+  1) 사용하는 경우 ==> 커맨드창에서 다음과 같이 수정해야함.
+    cd $BULKER_HOME
+    export BULKER_CRYPT_PASSWORD='wooribank'
+    java -cp "dist/classes:dist/lib/*" com.rayful.bulk.exec.Crypt "search"          # 사용자명 <= DB
+    java -cp "dist/classes:dist/lib/*" com.rayful.bulk.exec.Crypt "Nh8VYq9DUnSc7ztVB"  # 비밀번호 <= DB
+
+
+  2) 인텔리제이 툴에서 실행 <==1)번 보다는 2)번을 선호
+     Edit Configure > com.rayful.bulk.exec.Crypt 선택, 파라미터로 암호화할 값 세팅
+
+    root  ==>    encode str=[y8ztC8lo78WYFkm/mMz+0NQzcccQS5dYRkSsWFhrBMYOXK6h6sXtWxMp9yooyq/s]
+    pass123# ==>  encode str=[zwGZdnLTmASMawfiYyApHAJTrDQwVfnV7kXKJMzrGu54YJXV5arGekNepXimspB1]
+
+  3) 출력된 값을 config.properties에 반영 — 현재 자리표시자(ENC(CHANGE_ME_...))를 실제 값으로 교체:
+
+ 2. elasticsearch에 색인요청시
+    키바나에서 생성한 원본APIKEY 값을 com.rayful.bulk.exec.Crypt 사용하여 암호화해서 아래에 값 할당
+    1.2)의 Crypt사용해, 원본 API값을 변환, config.properties 의 아래 값에서 사용
+    ES.API.AUTH.APIKEY=ENC(BYsdfuIbUBaT2nFVVnlHa+8owAxDZxLQHSlUxCqXZiv3vQKuE2vF/NCFCdMhzabwpJ2cAtqk3p4jK0xc9JaS6ogBEol3PB/xIqET32RtuxyqGbK4BYNU8thBu8nNty1d)

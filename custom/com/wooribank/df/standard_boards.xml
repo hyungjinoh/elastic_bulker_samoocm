@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definition>
+	<target index_name="idx_02_boards">
+		<result_file file_name="idx02boards" max_rows="500" />
+	</target>
+	
+	<source>
+		<!-- dev -->
+		<!-- 
+		<connect_info id="db_conn1">
+			<rdbms>mariadb</rdbms>
+			<driverClass>org.mariadb.jdbc.Driver</driverClass>
+			<url>jdbc:mariadb://130.1.1.70:3306/covi_smart4j</url>
+			<username>gwuser</username>
+			<password>Ehwadb123!</password>
+		</connect_info>
+		-->
+		<!-- live -->
+		
+		<connect_info id="db_conn1">
+			<rdbms>mariadb</rdbms>
+			<driverClass>org.mariadb.jdbc.Driver</driverClass>
+			<url>jdbc:mariadb://122.199.202.101:3306/standard?allowPublicKeyRetrieval=true&amp;useSSL=false&amp;useUnicode=true&amp;characterEncoding=UTF-8&amp;passwordCharacterEncoding=UTF-8
+			</url>
+			<username>rayful</username>
+			<password>fpdlvnf1!@</password>
+		</connect_info>
+		
+		
+		<bulker_service class_name="com.rayful.bulk.service.es.BulkerService" />
+		<bulker_crypt use="no" class_name="com.rayful.bulk.encryption.BulkerBaseCrypt" />
+		<index_service use="no" async="yes" class_name="com.rayful.bulk.service.es.IndexService" />
+		<!-- dev -->
+		<!--
+		<file_helper use="yes" class_name="com.rayful.bulk.attach.SftpFileHelper" remote_basepath="/devp/stor" remove_basepath="devgw.ehwadia.co.kr">
+			<url>130.1.1.61</url>
+			<port>22</port>
+			<username>appservice</username>
+			<password>Ehwalinux123!</password>
+		</file_helper>
+		-->
+		<!-- live -->
+		
+		<file_helper use="no" class_name="com.rayful.bulk.attach.SftpFileHelper" remote_basepath="/prd/stor" remove_basepath="gw.ehwadia.co.kr">
+			<url>130.1.1.41</url>
+			<port>22</port>
+			<username>appservice</username>
+			<password>PEnGJ5s9vXerepv4p</password>
+		</file_helper>
+		
+		<db_column_info>
+			<!-- 필수 -->
+			<column name="docid" role="key" />
+			<column name="indexAction__" role="index_action" output="no" />
+			<column name="indexed_dtm" role="index_time" />
+			<column name="attach_path" role="file_path" query="file_query" />
+			<column name="attach_nm" role="file_name" query="file_query" />
+		</db_column_info>
+		
+		<es_field_info>
+			<field name="attach_info" role="file_info" index="yes" />
+			<field name="attach_body" role="file_data" index="yes" />
+		</es_field_info>
+		
+		<data_source last_doc_indexdate="2026-07-24 11:01:53" delete_not_indexed="yes">
+			<query_info>
+				<key_query dataSource="db_conn1" cursor_use="no">
+					<![CDATA[
+SELECT  id AS docid
+FROM standard.hokkaido_board
+WHERE id=1
+					]]>
+				</key_query>
+				
+				<key_inc_query dataSource="db_conn1">
+					<![CDATA[
+SELECT
+		Q_ID AS q_id
+		, MessageID AS docid -- 메시지ID
+		, FolderID AS folder_id -- 폴더ID
+		, CASE
+			WHEN QueueType = 'I' THEN 'I'
+			WHEN QueueType = 'U' THEN 'I'
+			WHEN QueueType = 'D' THEN 'D'
+			ELSE '' END AS indexAction__
+FROM
+		queue_searchdata_board_doc
+WHERE
+		IndexDate IS NULL
+	and ServiceType = 'Board'
+ORDER BY
+		Q_ID ASC
+					]]>
+				</key_inc_query>
+				
+				<update_queue_query dataSource="db_conn1">
+					<![CDATA[
+UPDATE
+		queue_searchdata_board_doc
+SET
+		IndexDate = now()
+WHERE
+		Q_ID = :q_id
+					]]>
+				</update_queue_query>
+				
+				<data_query dataSource="db_conn1">
+					<![CDATA[
+SELECT  id
+	 , '20000' AS collapse_cd
+	 , id AS docid
+     , title
+     , content
+     , author AS writer_nm
+     , department
+     , category
+--      , DATE_FORMAT(created_at, '%Y-%m-%dT%H:%i:%s') AS reg_dtm -- 등록일
+     , DATE_FORMAT(created_at, '%Y-%m-%d') AS reg_dtm -- 등록일
+     , DATE_FORMAT(updated_at, '%Y-%m-%d') AS upd_dtm -- 등록일
+FROM standard.hokkaido_board
+WHERE
+		id = :docid
+					]]>
+				</data_query>
+				
+			</query_info>
+		</data_source>
+	</source>
+</definition>

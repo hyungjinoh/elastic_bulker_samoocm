@@ -1,0 +1,215 @@
+사업						워크시트
+	프로젝트기본정보					테이블정보	샘플데이터1	샘플데이터2	샘플데이터3
+		프로젝트 번호				PROJECT_NO	20260382	20260383	20260384
+		등록명				PJT_NAME, MIS_NAME	광주 치평동 주상복합 리모델링 구조검토	성남동 재개발정비사업 CM	한강로구역 도시환경정비사업 CM
+		계약명				계약명	광주 치평동 주상복합 리모델링 구조검토
+		준공명				MISNAME	광주 치평동 주상복합 리모델링 구조검토
+		진행상황				PROGRESS	진행	진행	진행
+		보안등급				SECURITYLEVEL	일반	일반	일반
+		표준폴더1				SITEGUBUN1	수행(개발)	수행(CM)
+		표준폴더1 구분타이틀				PROJECTGUBUNTITLE	개발테스트
+		현장구분				SITEGUBUN2		현장
+		표준폴더2				PROJECTGUBUN2	수행(CM)	수행(개발)	수행(CM)
+		표준폴더2 구분타이틀				PROJECTGUBUN2TITLE	CM테스트	테스트	개발 테스트
+
+	문서정보
+		사전이관 체크리스트					"26.04.9_문서뷰어 패치매뉴얼 (ServerEdition_linux).pdf
+보안관리자 2026-11-02 17:14
+2. 우장각 재구축 요구사항 리스트 (상세).pdf
+보안관리자 2026-11-02 17:13"	"2. 우장각 재구축 요구사항 리스트 (상세).pdf
+보안관리자 2026-11-02 17:57"
+		이관체크리스트					"26.04.9_2025 문서뷰어 설치메뉴얼 (linux).pdf
+보안관리자 2026-11-02 17:13"
+
+	참여정보
+		수주형태				PARTICIPATIONINFO1,PARTICIPATIONINFO1ETC	기타, 수의계약	PQ+TP(SOQ)+입찰	PQ+TP(SOQ)+입찰
+		용역형태(상세)				PARTICIPATIONINFO4			단독수행
+		용역형태(일반)				PARTICIPATIONINFO3
+
+
+		참여자
+			내부
+				대표PM		DEPARTMENTPMNM	안대환	심유석	심유석
+				단장		GENERALMANAGERNM		정한호
+			외부
+				수요자		CONSUMER	테스트1		테스트1
+				계약발주자		CONTRACTORDERER			테스트2
+				원발주자		ORIGINALORDERER	테스트3		테스트3
+				허가권자		ADMITTER	테스트4		테스트4
+				감독자		INSPECTOR	테스트5		테스트5
+				건설사업관리자		CONSTRUCTIONPM	테스트6		테스트6
+				시행자		PROJECTOPERATOR	테스트8		테스트7
+				설계자		DESIGNER	테스트9		테스트8
+				시공자		BUILDER	테스트10		테스트9
+				컨설팅		CONSULTING	테스트11		테스트10
+				공동수행사		JOINTCONTRACTOR	테스트7		테스트11
+				기타		EXTERNALETC	테스트12		테스트12
+
+	위치
+		국내
+			준공전
+					시/도	CITYBEFORE	광주광역시	경기도	서울특별시
+					군/구	TOWNBEFORE	서구	성남시	용산구
+					세부주소	DETAILEDADDRESSBEFORE	광주광역시 서구 치평동 1261번지 외 1필지	성남시 중원구 성남동 2348 일대	서울시 용산구 한강로1가 158 일대
+
+
+	사업유형
+		시행방식				DIVISIONBUSINESS2	재건축사업, 도시재생사업	재건축사업, 재개발사업	재건축사업, 도시재생사업
+		건축행위				DIVISIONBUSINESS3	리모델링	신축	신축
+
+
+	사업비(\)
+		공통
+			사업비(원)			TOTALEXPENSES	15,022,222,223		1,500,000
+			사업비(평당)			TOTALEXPENSESP	984,000		28
+			설계가격(원)			DESIGNEXPENSES	1,500,000		1,600,000
+			설계가격(평당)			DESIGNEXPENSESP	98		30
+			최초공사비(원)			INITIALCONSTRUCTIONEXPENSES	2,500,000		32,515,151
+			최초공사비(평당)			INITIALCONSTRUCTIONEXPENSESP	163		624
+			최종공사비(원)			FINALCONSTRUCTIONEXPENSES	5,500,000		65,481,223
+			최종공사비(평당)			FINALCONSTRUCTIONEXPENSESP	360		1,257
+		원가
+			설계가격(\)
+					건축	DCONSTRUCTION	11		21,321
+					기계	DMACHINE	12		32,121,635
+					전기	DELECTRIC	13		51
+					통신	DCOMMUNICATION	14		151,321
+					소방(기계)	DFIREMACHINE	15		564,654
+					소방(전기)	DFIREELECTRIC	16		213
+					토목	DCIVIL	17		51
+					조경	DLANDSCAPING	18		48
+					기타	COSTPRICEETC	19
+			최초공사비(\)
+					건축	CCONSTRUCTION	21		654
+					기계	CMACHINE	22		654
+					전기	CELECTRIC	23		321
+					통신	CCOMMUNICATION	24		32,184
+					소방(기계)	CFIREMACHINE	25		987
+					소방(전기)	CFIREELECTRIC	26		654
+					토목	CCIVIL	27		321
+					조경	CLANDSCAPING	28		0
+					기타	CONSTRUCTIONPRICEETC	29
+			최종공사비(\)
+					건축	PCONSTRUCTION	31
+					기계	PMACHINE	32
+					전기	PELECTRIC	33
+					통신	PCOMMUNICATION	34
+					소방(기계)	PFIREMACHINE	35
+					소방(전기)	PFIREELECTRIC	36
+					토목	PCIVIL	37
+					조경	PLANDSCAPING	38
+					기타	COMPLETIONPRICEETC	39
+	공정
+		공통
+			등록일자			PROJECTCREATED_DATE	2026-09-14	2026-09-15	2026-09-15
+		단계별일정
+			착수일
+				설계전 단계		DESIGNSTART_DATE			2026-09-16
+				기본설계 단계		BASICDESIGNSTART_DATE			2026-09-17
+				실시설계 단계		WORKINGDESIGNSTART_DATE			2026-09-18
+				구매조달 단계		PURCHASESTART_DATE			2026-09-19
+				시공 단계		CONSTRUCTSTART_DATE			2026-09-20
+				시공후 단계		AFTERCONSTRUCTSTART_DATE			2026-09-21
+			종료일
+				설계전 단계		DESIGNEND_DATE			2026-09-22
+				기본설계 단계		BASICDESIGNEND_DATE			2026-09-23
+				실시설계 단계		WORKINGDESIGNEND_DATE			2026-09-24
+				구매조달 단계		PURCHASEEND_DATE			2026-09-25
+				시공 단계		CONSTRUCTEND_DATE			2026-09-26
+				시공후 단계		AFTERCONSTRUCTEND_DATE			2026-09-27
+			기간
+				설계전 단계 기간(일)		DESIGNPERIOD			7
+				기본설계 단계 기간(일)		BASICDESIGNPERIOD			7
+				실시설계 단계 기간(일)		WORKINGDESIGNPERIOD			7
+				구매조달 단계 기간(일)		PURCHASEPERIOD			7
+				시공 단계 기간(일)		CONSTRUCTPERIOD			7
+				시공후 단계 기간(일)		AFTERCONSTRUCTPERIOD			7
+		CP
+			착수일
+				가설 및 공사 준비		INSTALLSTART_DATE			2026-10-01
+				흙막이공사		RETAININGSTART_DATE			2026-10-02
+				터파기공사		DIGSTART_DATE			2026-10-03
+				기초공사		FOUNDATIONWORKSTART_DATE			2026-10-04
+				지하골조		UNDERGROUNDFRAMESTART_DATE			2026-10-05
+				지상골조		GROUNDFRAMESTART_DATE			2026-10-06
+				골조완료 후 마감공사		FINISHCONSTRUCTSTART_DATE			2026-10-07
+				준공청소 및 시운전		TESTSTART_DATE			2026-10-08
+				기타		CPETCSTART_DATE			2026-10-09
+			종료일
+				가설 및 공사 준비		INSTALLEND_DATE			2026-10-10
+				흙막이공사		RETAININGEND_DATE			2026-10-11
+				터파기공사		DIGEND_DATE			2026-10-12
+				기초공사		FOUNDATIONWORKEND_DATE			2026-10-13
+				지하골조		UNDERGROUNDFRAMEEND_DATE			2026-10-14
+				지상골조		GROUNDFRAMEEND_DATE			2026-10-15
+				골조완료 후 마감공사		FINISHCONSTRUCTEND_DATE			2026-10-16
+				준공청소 및 시운전		TESTEND_DATE			2026-10-17
+				기타		CPETCEND_DATE			2026-10-18
+			도서납품일
+				기획설계도서		PLANDESIGNDRAWING_DATE			2026-10-19
+				기본설계도서		BASICDESIGNDRAWING_DATE			2026-10-20
+				실시설계도서		WORKINGDESIGNDRAWING_DATE			2026-10-21
+				인허가도서		APPROVALDRAWING_DATE			2026-10-22
+				착공도서		STARTCONSTRUCTDRAWING_DATE			2026-10-23
+				준공도서		COMPLETEDRAWING_DATE			2026-10-24
+
+
+
+시설
+	면적
+		대지면적(m²)				SITEAREA	2,880.90	55,490	23,633
+		대지면적(평)				SITEAREAP	871.5	16,785.70	7,149
+		건축면적(m²)				BUILDINGAREA	2,222		5,351
+		건축면적(평)				BUILDINGAREAP	690.8		1,618.70
+		연면적(m²)				TOTALFLOORAREA	50,467.70	232,242	172,156
+		연면적(평)				TOTALFLOORAREAP	15,266.50	70,253.20	52,077.20
+		건폐율(%)				BUILDINGLANDRATIO	77.13	18	23
+		용적률(%)				FLOORAREARATIO	1,299	250	488
+
+	주차
+		옥내외
+			옥내주차(대)			INDOORPARKINGSPACE	1
+			옥외주차(대)			OUTDOORPARKINGSPACE	2
+			법정주차(대)			LAWPARKINGSPACE	3
+			계획주차(대)			PLANPARKINGSPACE	3
+
+	규모
+		지상(층)				GROUNDFLOORS	24	15	38
+		지하(층)				UNDERGROUNDFLOORS	5	3	5
+		최대 굴착깊이(m)				MAXDEPTHEXCAVATION	41
+
+		Unit
+			세대(공동주택)			GENERATION	47
+			실(오피스텔/기숙사)			ROOM	48
+			객실(숙박시설)			PARLOR	49
+			병상(병원)			SICKBED	50
+
+	설계정보
+		조사/평가				EVALUATION	지하안전영향평가, 건축물안전영향평가, 결로방지성능평가, 문화재조사, 지반조사
+		심의/승인/허가				EVALUATIONETC	건축심의, 경관심의, 임시사용승인, 실시설계인가
+
+
+	인증/등급
+		녹색건축인증
+			예비인증(등급)			GREENPC	최우수(그린1등급)
+			본인증(등급)			GREENMC	우량(그린3등급)
+
+		건축물에너지효율등급
+			예비인증(등급)			BUILDINGENERGYPC	1++
+			본인증(등급)			BUILDINGENERGYMC	4
+
+		제로에너지 건축물 인증
+			예비인증(등급)			ZEROENERGYPC	ZEB1
+			본인증(등급)			ZEROENERGYMC
+
+		신재생에너지
+			지능형 건축물 등급			?	3
+
+
+기술
+	구조재료
+		구조재료
+	공종
+		가설공사
+
+관련프로젝트

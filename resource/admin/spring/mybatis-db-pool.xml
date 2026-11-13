@@ -1,0 +1,64 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:mybatis="http://mybatis.org/schema/mybatis-spring"
+	xsi:schemaLocation="http://mybatis.org/schema/mybatis-spring http://mybatis.org/schema/mybatis-spring.xsd
+						http://www.springframework.org/schema/beans https://www.springframework.org/schema/beans/spring-beans.xsd
+						http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd">
+	
+	<!-- 암호화된 값(ENC(...))이 있는 properties 파일을 복호화하여 로드하도록 설정 -->
+	<!-- [행정안전부 SW 개발보안 가이드 준수]
+	     - 취약한 암호화 알고리즘(MD5/DES) 사용 금지(CWE-327): PBEWITHHMACSHA256ANDAES_256 + 무작위 IV
+	     - 하드코딩된 암호화 키 사용 금지(CWE-321): 환경변수(BULKER_CRYPT_PASSWORD)로 주입 -->
+    <bean id="encryptorConfig" class="org.jasypt.encryption.pbe.config.EnvironmentPBEConfig">
+		<property name="algorithm" value="PBEWITHHMACSHA256ANDAES_256" />
+		<property name="passwordEnvName" value="BULKER_CRYPT_PASSWORD" />
+		<property name="ivGenerator">
+			<bean class="org.jasypt.iv.RandomIvGenerator" />
+		</property>
+	</bean>
+	 
+	<bean id="configurationEncryptor" class="org.jasypt.encryption.pbe.StandardPBEStringEncryptor">
+		<property name="config" ref="encryptorConfig" />
+	</bean>
+	
+	<bean id="propertyConfigurer" class="org.jasypt.spring4.properties.EncryptablePropertyPlaceholderConfigurer">
+		<constructor-arg ref="configurationEncryptor" />
+		<property name="locations">
+			<list>
+				<value>classpath:config.properties</value>
+			</list>
+		</property>
+	</bean>
+	
+	<!-- HikariCP -->
+ 	<!--bean id="hikariConfig" class="com.zaxxer.hikari.HikariConfig">
+		<property name="driverClassName" value="${BULKER.ADMIN.DRIVERCLASS}"/>
+		<property name="jdbcUrl" value="${BULKER.ADMIN.URL}"/>
+		<property name="username" value="${BULKER.ADMIN.USERNAME}"/>
+		<property name="password" value="${BULKER.ADMIN.PASSWORD}"/>
+	</bean> 
+	<bean id="dataSource" class="com.zaxxer.hikari.HikariDataSource" destroy-method="close">	
+		<constructor-arg ref="hikariConfig" />
+	</bean-->
+	
+	<bean id="dataSource" class="org.apache.commons.dbcp2.BasicDataSource" destroy-method="close">
+		<property name="driverClassName" value="${BULKER.ADMIN.DRIVERCLASS}"/>
+		<property name="url" value="${BULKER.ADMIN.URL}"/>
+		<property name="username" value="${BULKER.ADMIN.USERNAME}"/>
+		<property name="password" value="${BULKER.ADMIN.PASSWORD}"/>
+	</bean>
+	
+	<!-- 실질적인 DB연동 -->
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="dataSource"/>
+
+		<property name="mapperLocations" value="classpath:admin/mapper/**/*Dao.xml"/>
+	 	<!-- mybatis-config.xml에 대한 정보를 기술함 -->
+		<!-- property name="configLocation" value="classpath:/mybatis-config.xml"></property -->
+	</bean>
+	 
+	<bean id="sqlSession" class="org.mybatis.spring.SqlSessionTemplate" destroy-method="clearCache">
+		<constructor-arg name="sqlSessionFactory" ref="sqlSessionFactory"/>
+	</bean>
+	 
+</beans>

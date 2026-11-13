@@ -1,0 +1,373 @@
+//PUT idx_projects1
+{
+  "settings": {
+    "index": {
+      "max_ngram_diff": "50",
+      "analysis": {
+        "char_filter": {
+          "remove_whitespace": {
+            "pattern": """\s+""",
+            "type": "pattern_replace",
+            "replacement": ""
+          },
+          "remove_special_chars": {
+            "pattern": """[^\w\s가-힣]""",
+            "type": "pattern_replace",
+            "replacement": " "
+          }
+        },
+        "filter": {
+          "stop_filtering": {
+            "type": "stop",
+            "stopwords_path": "dict/STOP_DEFAULT.txt"
+          },
+          "synonym_filter": {
+            "type": "synonym_graph",
+            "updateable": "true",
+            "synonyms_path": "dict/SYNO_DEFAULT.txt",
+            "lenient": "true"
+          },
+          "nori_posfilter": {
+            "type": "nori_part_of_speech",
+            "stoptags": [
+              "E",
+              "IC",
+              "J",
+              "MAG",
+              "MAJ",
+              "MM",
+              "NA",
+              "SC",
+              "SE",
+              "SF",
+              "SP",
+              "SSC",
+              "SH",
+              "SSO",
+              "SY",
+              "UNA",
+              "UNKNOWN",
+              "VA",
+              "VCN",
+              "VCP",
+              "VSV",
+              "VV",
+              "VX",
+              "XPN",
+              "XR",
+              "XSA",
+              "XSN",
+              "XSV"
+            ]
+          },
+          "edge_ngram_filter_front": {
+            "min_gram": "1",
+            "side": "front",
+            "type": "edge_ngram",
+            "max_gram": "64"
+          },
+          "starstory_chosung_filter": {
+            "type": "chosung_filter"
+          },
+          "starstory_jamo_filter": {
+            "type": "jamo_filter"
+          },
+          "starstory_eng2kor_filter": {
+            "type": "eng2kor_filter"
+          },
+          "auto_complete_filter": {
+            "type": "ngram",
+            "min_gram": "1",
+            "max_gram": "50"
+          }
+        },
+        "tokenizer": {
+          "nori_user_dict": {
+            "type": "nori_tokenizer",
+            "user_dictionary": "dict/USER_DEFAULT.txt",
+            "decompound_mode": "discard"
+          },
+          "edge_ngram_tokenizer": {
+            "token_chars": [
+              "letter",
+              "digit"
+            ],
+            "min_gram": "1",
+            "type": "edge_ngram",
+            "max_gram": "64"
+          },
+          "ngram_tokenizer": {
+            "token_chars": [
+              "letter",
+              "digit"
+            ],
+            "type": "ngram",
+            "max_gram": "5"
+          },
+          "auto_ngram_tokenizer": {
+            "token_chars": [
+              "letter",
+              "digit"
+            ],
+            "type": "ngram",
+            "min_gram": "2",
+            "max_gram": "3"
+          },
+          "path_hier_tokenizer": { "type": "path_hierarchy", "delimiter": "/" }
+        },
+        "analyzer": {
+          "chosung_index_analyzer": {
+            "filter": [
+              "starstory_chosung_filter",
+              "lowercase",
+              "trim",
+              "edge_ngram_filter_front"
+            ],
+            "char_filter": [
+              "remove_whitespace"
+            ],
+            "type": "custom",
+            "tokenizer": "keyword"
+          },
+          "chosung_search_analyzer": {
+            "filter": [
+              "starstory_chosung_filter",
+              "lowercase",
+              "trim"
+            ],
+            "char_filter": [
+              "remove_whitespace"
+            ],
+            "type": "custom",
+            "tokenizer": "keyword"
+          },
+          "eng2kor_analyzer": {
+            "filter": [
+              "starstory_jamo_filter",
+              "lowercase",
+              "edge_ngram_filter_front"
+            ],
+            "char_filter": [
+              "remove_whitespace"
+            ],
+            "type": "custom",
+            "tokenizer": "keyword"
+          },
+          "eng2kor_search_analyzer": {
+            "filter": [
+              "starstory_eng2kor_filter",
+              "starstory_jamo_filter",
+              "lowercase"
+            ],
+            "char_filter": [
+              "remove_whitespace"
+            ],
+            "type": "custom",
+            "tokenizer": "keyword"
+          },
+          "ngram_analyzer": {
+            "filter": [
+              "lowercase"
+            ],
+            "char_filter": [
+              "remove_whitespace"
+            ],
+            "tokenizer": "ngram_tokenizer"
+          },
+          "ngram_search_analyzer": {
+            "filter": [
+              "lowercase"
+            ],
+            "tokenizer": "standard"
+          },
+          "auto_ngram_analyzer": {
+            "filter": [
+              "lowercase"
+            ],
+            "char_filter": [
+              "remove_whitespace"
+            ],
+            "tokenizer": "auto_ngram_tokenizer"
+          },
+          "nori_analyzer": {
+            "filter": [
+              "lowercase",
+              "snowball",
+              "nori_posfilter",
+              "nori_readingform"
+            ],
+            "char_filter": [
+              "remove_special_chars"
+            ],
+            "type": "custom",
+            "tokenizer": "nori_user_dict"
+          },
+          "nori_search_analyzer": {
+            "filter": [
+              "lowercase",
+              "snowball",
+              "synonym_filter",
+              "nori_posfilter",
+              "nori_readingform",
+              "stop_filtering"
+            ],
+            "char_filter": [
+              "remove_special_chars"
+            ],
+            "type": "custom",
+            "tokenizer": "nori_user_dict"
+          },
+          "jamo_analyzer": {
+            "filter": [
+              "starstory_jamo_filter",
+              "lowercase",
+              "trim",
+              "edge_ngram_filter_front"
+            ],
+            "char_filter": [
+              "remove_special_chars",
+              "remove_whitespace"
+            ],
+            "type": "custom",
+            "tokenizer": "edge_ngram_tokenizer"
+          },
+          "jamo_search_analyzer": {
+            "filter": [
+              "starstory_jamo_filter",
+              "lowercase",
+              "trim"
+            ],
+            "char_filter": [
+              "remove_special_chars",
+              "remove_whitespace"
+            ],
+            "type": "custom",
+            "tokenizer": "keyword"
+          },
+          "path_hierarchy_analyzer": {
+            "type": "custom",
+            "tokenizer": "path_hier_tokenizer"
+          }
+        }
+      },
+      "number_of_shards": "3",
+      "number_of_replicas": "0"
+    }
+  },
+
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "docid": { "type": "keyword" },
+      "project_id": { "type": "keyword" },
+      "project_status": { "type": "keyword" },
+      "save_status": { "type": "keyword" },
+
+      "created_date": { "type": "date", "format": "strict_date_optional_time" },
+      "last_modified_date": { "type": "date", "format": "strict_date_optional_time" },
+      "expired_date": { "type": "date", "format": "strict_date_optional_time" },
+
+      "folder_id": { "type": "keyword" },
+      "manager_group_id": { "type": "keyword" },
+      "project_no": { "type": "keyword" },
+
+      "pjt_name": {
+        "type": "text", "analyzer": "nori_analyzer", "search_analyzer": "nori_search_analyzer",
+        "fields": { "keyword": { "type": "keyword", "ignore_above": 512 } }
+      },
+      "mis_name": {
+        "type": "text", "analyzer": "nori_analyzer", "search_analyzer": "nori_search_analyzer",
+        "fields": { "keyword": { "type": "keyword", "ignore_above": 512 } }
+      },
+      "mis_name_eng": {
+        "type": "text", "analyzer": "standard",
+        "fields": { "keyword": { "type": "keyword", "ignore_above": 512 } }
+      },
+      "contract_name": {
+        "type": "text", "analyzer": "nori_analyzer", "search_analyzer": "nori_search_analyzer",
+        "fields": { "keyword": { "type": "keyword", "ignore_above": 512 } }
+      },
+      "doc_name": {
+        "type": "text", "analyzer": "nori_analyzer", "search_analyzer": "nori_search_analyzer",
+        "fields": { "keyword": { "type": "keyword", "ignore_above": 512 } }
+      },
+
+      "project_gubun": { "type": "keyword" },
+      "project_gubun_title": { "type": "keyword" },
+      "security_level": { "type": "keyword" },
+
+      "country": { "type": "keyword" },
+      "city_after": { "type": "keyword" },
+      "town_after": { "type": "keyword" },
+      "overseas": { "type": "keyword" },
+      "nation_after": { "type": "keyword" },
+
+      "enterprise_type": { "type": "keyword" },
+      "division_business1": { "type": "keyword" },
+      "facilities_type": { "type": "keyword" },
+      "building_use": { "type": "keyword" },
+
+      "site_area": { "type": "double" },
+      "building_area": { "type": "double" },
+      "total_floor_area": { "type": "double" },
+      "ground_floors": { "type": "integer" },
+      "underground_floors": { "type": "integer" },
+
+      "contract_date": { "type": "date", "format": "strict_date_optional_time" },
+      "construction_date": { "type": "date", "format": "strict_date_optional_time" },
+      "completion_approval_date": { "type": "date", "format": "strict_date_optional_time" },
+      "start_date": { "type": "date", "format": "strict_date_optional_time" },
+      "end_date": { "type": "date", "format": "strict_date_optional_time" },
+
+      "sstep": { "type": "keyword" },
+      "progress": { "type": "keyword" },
+      "order_dept": { "type": "keyword" },
+      "work_gubun": { "type": "keyword" },
+      "service_gubun": { "type": "keyword" },
+
+      "dept_pm_id": { "type": "keyword" },
+      "dept_pm_nm": {
+        "type": "text", "analyzer": "nori_analyzer", "search_analyzer": "nori_search_analyzer",
+        "fields": { "keyword": { "type": "keyword", "ignore_above": 256 } }
+      },
+      "general_manager_id": { "type": "keyword" },
+      "general_manager_nm": {
+        "type": "text", "analyzer": "nori_analyzer", "search_analyzer": "nori_search_analyzer",
+        "fields": { "keyword": { "type": "keyword", "ignore_above": 256 } }
+      },
+      "sales_pm_id": { "type": "keyword" },
+      "sales_pm_nm": {
+        "type": "text", "analyzer": "nori_analyzer", "search_analyzer": "nori_search_analyzer",
+        "fields": { "keyword": { "type": "keyword", "ignore_above": 256 } }
+      },
+      "operation_pm_id": { "type": "keyword" },
+      "operation_pm_nm": {
+        "type": "text", "analyzer": "nori_analyzer", "search_analyzer": "nori_search_analyzer",
+        "fields": { "keyword": { "type": "keyword", "ignore_above": 256 } }
+      },
+
+      "total_expenses": { "type": "double" },
+      "base_currency": { "type": "keyword" },
+      "green_certification": { "type": "keyword" },
+      "building_energy_rating": { "type": "keyword" },
+
+      "user_id": { "type": "keyword" },
+      "user_name": {
+        "type": "text", "analyzer": "nori_analyzer", "search_analyzer": "nori_search_analyzer",
+        "fields": { "keyword": { "type": "keyword", "ignore_above": 256 } }
+      },
+      "account": { "type": "keyword" },
+      "group_title": { "type": "keyword" },
+      "position": { "type": "keyword" },
+      "task": {
+        "type": "text", "analyzer": "nori_analyzer", "search_analyzer": "nori_search_analyzer",
+        "fields": { "keyword": { "type": "keyword", "ignore_above": 256 } }
+      },
+      "man_hour": { "type": "double" },
+      "authority": { "type": "keyword" },
+      "sort_order": { "type": "keyword" },
+      "indexed_dtm": { "type": "date", "format": "strict_date_optional_time" }
+    }
+  }
+
+}

@@ -1,0 +1,1 @@
+{errors=true, took=0, items=[{index={_index=idx_projects1, _id=1PxJjicq4y-, status=400, error={type=strict_dynamic_mapping_exception, reason=[1:358] mapping set to strict, dynamic introduction of [dockey] within [_doc] is not allowed}}}]}

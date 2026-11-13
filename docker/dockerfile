@@ -1,0 +1,25 @@
+FROM docker.elastic.co/elasticsearch/elasticsearch:8.17.8
+
+# 1. 컨테이너 내부 임시 경로 생성
+USER elasticsearch
+RUN mkdir -p /tmp/plugins
+
+# 2. 프로젝트 폴더 내 plugins/ 에 있는 zip 파일을 컨테이너 내부로 복사
+COPY --chown=elasticsearch:0 plugins/starstory-analyzer-8.17.8.zip /tmp/plugins/
+
+# 3. 플러그인 설치 (온라인 nori + 로컬 커스텀 플러그인 파일)
+RUN elasticsearch-plugin install --batch analysis-nori && \
+    elasticsearch-plugin install --batch file:///tmp/plugins/starstory-analyzer-8.17.8.zip
+
+# 4. 설치 완료 후 임시 파일 정리 (이미지 용량 최적화)
+RUN rm -rf /tmp/plugins
+
+# ─── 5. [경로 수정] config/dict/ 폴더 생성 및 사전 파일(.txt) 3개 생성 ───
+# 하위 폴더(dict)를 생성하고 빈 파일을 만든 뒤, 엘라스틱서치 권한(elasticsearch:0)을 부여합니다.
+RUN mkdir -p /usr/share/elasticsearch/config/dict && \
+    touch /usr/share/elasticsearch/config/dict/STOP_DEFAULT.txt \
+          /usr/share/elasticsearch/config/dict/SYNO_DEFAULT.txt \
+          /usr/share/elasticsearch/config/dict/USER_DEFAULT.txt && \
+    chown -R elasticsearch:0 /usr/share/elasticsearch/config/dict && \
+    chmod 770 /usr/share/elasticsearch/config/dict && \
+    chmod 660 /usr/share/elasticsearch/config/dict/*.txt

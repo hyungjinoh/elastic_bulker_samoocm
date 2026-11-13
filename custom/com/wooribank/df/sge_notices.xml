@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definition>
+	<target index_name="idx_02_general">
+		<result_file file_name="idx02general" max_rows="500" />
+	</target>
+	
+	<source>
+		<connect_info id="db_conn1">
+			<rdbms>TIBERO</rdbms>
+			<driverClass>com.tmax.tibero.jdbc.TbDriver</driverClass>
+			<url>jdbc:tibero://10.126.12.78:3306/SGEOWN</url>
+			<username></username>
+			<password></password>
+		</connect_info>
+		
+		
+		<bulker_service class_name="com.rayful.bulk.service.es.BulkerService" />
+		<bulker_crypt use="no" class_name="com.rayful.bulk.encryption.BulkerBaseCrypt" />
+		<index_service use="no" async="yes" class_name="com.rayful.bulk.service.es.IndexService" />
+		<etc_reader use="no" class_name="com.wooribank.bulk.service.MenusEtcReader" />
+		<!-- dev -->
+		<!--
+		<file_helper use="yes" class_name="com.rayful.bulk.attach.SftpFileHelper" remote_basepath="/devp/stor" remove_basepath="devgw.ehwadia.co.kr">
+			<url>130.1.1.61</url>
+			<port>22</port>
+			<username>appservice</username>
+			<password>Ehwalinux123!</password>
+		</file_helper>
+		-->
+		<!-- live -->
+		
+		<file_helper use="no" class_name="com.rayful.bulk.attach.SftpFileHelper" remote_basepath="/prd/stor" remove_basepath="gw.ehwadia.co.kr">
+			<url>130.1.1.41</url>
+			<port>22</port>
+			<username>appservice</username>
+			<password>PEnGJ5s9vXerepv4p</password>
+		</file_helper>
+		
+		<db_column_info>
+			<!-- 필수 -->
+			<column name="docid" role="key" />
+			<column name="indexAction__" role="index_action" output="no" />
+			<column name="indexed_dtm" role="index_time" />
+			<column name="attach_path" role="file_path" query="file_query" />
+			<column name="attach_nm" role="file_name" query="file_query" />
+			<column name="content" role="body" query="data_query" removeHtml="yes" />
+		</db_column_info>
+		
+		<es_field_info>
+			<field name="attach_info" role="file_info" index="yes" />
+			<field name="attach_body" role="file_data" index="yes" />
+		</es_field_info>
+		
+		<data_source last_doc_indexdate="2026-07-22 10:31:35" delete_not_indexed="yes">
+			<query_info>
+				<key_query dataSource="db_conn1" cursor_use="no">
+					<![CDATA[
+SELECT
+	B.AMSYS_BLBR_ID || '_' || B.AMSYS_BLBR_DTL_ID AS "docid"
+	, B.AMSYS_BLBR_ID AS "blbrId"
+	, B.AMSYS)BLBR_DTL_ID AS "blbrDtlId"
+FROM SGEOWN.MSGE004ITM A, SGEOWN.MSGE005ITF B
+WHERE 1=1
+	AND A.AMSYS_BLBR_ID = B.AMSYS_BLBR_ID
+	AND B.DAT_USG_YN='Y'
+	AND A.AMSYS_BLBR_KDCD=1  -- 공지사항:1, 게시판:2
+	AND B.AMSYS_BLBR_ID = :blbrId
+	AND B.AMSYS_BLBR_DTL_ID = :blbrDtlId
+	ORDER BY B.UPPD_FIX_YN DESC, B.AMSYS_BLBR_ID DESC, B.BLTN_SORT_SEQ_NO DESC
+					]]>
+				</key_query>
+				
+				<key_inc_query dataSource="db_conn1">
+					<![CDATA[
+					]]>
+				</key_inc_query>
+				
+				<update_queue_query dataSource="db_conn1">
+					<![CDATA[
+SELECT 1 FROM DUAL
+					]]>
+				</update_queue_query>
+				
+				<data_query dataSource="db_conn1">
+					<![CDATA[
+SELECT
+	B.AMSYS_BLBR_ID || '_' || B.AMSYS_BLBR_DTL_ID AS "docid"
+	, 'rptlvks' AS "category_full"
+	, 20000 AS "collapse_cd"
+	, A.AMSYS_BLBR_KDCD AS "blbrKdcd"
+	, B.AMSYS_BLBR_ID AS "blbrId"
+	, B.AMSYS)BLBR_DTL_ID AS "blbrDtlId"
+	, B.AMSYS_BIZ_CFCD AS "bizCfcd"
+	, B.B:BR_BLTN_TITL_TXT AS "title"
+	, B.AMSYS_BLBR_BLTNTXT AS "content"
+	, B.HGRN_BLBR_DTL_ID AS "upprBlbrDtlId"
+	, B.AMSYS_ATFL_ID AS "atflId"
+	, B.BLTN_SORT_SEQ_NO AS "sortSeqNo"
+	, B.BLBR_RGPE_NO AS "blbrRplsNo"
+	, B.ANC_RGPE_NM AS "writer_nm"
+	, SUBSTR(B.BLTN_TEM_END_DT,0,4)||'_'||'-'||SUBSTR(B.BLTN_TEM_END_DT,7,2) AS "end_dtm"
+	, B.UPPO_FIX_YN AS "uppoFixYn"
+	, SUBSTR(B.FST_DB_RGS_DTM,0,4)||'-'||SUBSTR(B.FST_DB_RGS_DTM,5,2)||'-'||SUBSTR(B.FST_DB_RGS_DTM,7,2) AS "reg_dtm"
+	, SUBSTR(B.LST_DB_CHG_DTM,0,4) || '-'|| SUBSTR(B.LST_DB_CHG_DTM,5,2)||'_'||SUBSTR(B.LST_DB_CHG_DTM,7,2) AS "upd_dtm"
+FROM SGEOWN.MSGE004ITM A, SGEOWN.MSGE005ITF B
+WHERE 1=1
+	AND A.AMSYS_BLBR_ID = B.AMSYS_BLBR_ID
+	AND B.DAT_USG_YN='Y'
+	AND A.AMSYS_BLBR_KDCD=1  -- 공지사항:1, 게시판:2
+	AND B.AMSYS_BLBR_ID = :blbrId
+	AND B.AMSYS_BLBR_DTL_ID = :blbrDtlId
+	ORDER BY B.UPPD_FIX_YN DESC, B.AMSYS_BLBR_ID DESC, B.BLTN_SORT_SEQ_NO DESC
+					]]>
+				</data_query>
+				
+			</query_info>
+		</data_source>
+	</source>
+</definition>

@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definition>
+	<target index_name="idx_02_general">
+		<result_file file_name="idx02general" max_rows="500" />
+	</target>
+	
+	<source>
+		<connect_info id="db_conn1">
+			<rdbms>tibero</rdbms>
+			<driverClass>com.tmax.tibero.jdbc.TbDriver</driverClass>
+			<url>jdbc:tibero://10.126.12.78:3306/SGEOWN</url>
+			<username></username>
+			<password></password>
+		</connect_info>
+		
+		
+		<bulker_service class_name="com.rayful.bulk.service.es.BulkerService" />
+		<bulker_crypt use="no" class_name="com.rayful.bulk.encryption.BulkerBaseCrypt" />
+		<index_service use="no" async="yes" class_name="com.rayful.bulk.service.es.IndexService" />
+		<etc_reader use="no" class_name="com.wooribank.bulk.service.MenusEtcReader" />
+		<!-- dev -->
+		<!--
+		<file_helper use="yes" class_name="com.rayful.bulk.attach.SftpFileHelper" remote_basepath="/devp/stor" remove_basepath="devgw.ehwadia.co.kr">
+			<url>130.1.1.61</url>
+			<port>22</port>
+			<username>appservice</username>
+			<password>Ehwalinux123!</password>
+		</file_helper>
+		-->
+		<!-- live -->
+		
+		<file_helper use="no" class_name="com.rayful.bulk.attach.SftpFileHelper" remote_basepath="/prd/stor" remove_basepath="gw.ehwadia.co.kr">
+			<url>130.1.1.41</url>
+			<port>22</port>
+			<username>appservice</username>
+			<password>PEnGJ5s9vXerepv4p</password>
+		</file_helper>
+		
+		<db_column_info>
+			<!-- 필수 -->
+			<column name="docid" role="key" />
+			<column name="indexAction__" role="index_action" output="no" />
+			<column name="indexed_dtm" role="index_time" />
+			<column name="attach_path" role="file_path" query="file_query" />
+			<column name="attach_nm" role="file_name" query="file_query" />
+		</db_column_info>
+		
+		<es_field_info>
+			<field name="attach_info" role="file_info" index="yes" />
+			<field name="attach_body" role="file_data" index="yes" />
+		</es_field_info>
+		
+		<data_source last_doc_indexdate="2026-07-22 10:31:35" delete_not_indexed="yes">
+			<query_info>
+				<key_query dataSource="db_conn1" cursor_use="no">
+					<![CDATA[
+SELECT
+ 	A.AMSYS_ATFL_ID||'_'||B.ATFL_SRNO AS "docid"
+	, A.AMSYS_ATFL_ID AS "amsysAtflId"
+	, B.ATFL_SRNO  AS "atflSrno"
+FROM SGEOWN.MSGE006ITM A
+INNER JOIN
+  SGEOWN.MSGE007ITF B ON A.AMSYS_ATFL_ID = B.AMSYS_ATFL_ID
+WHERE 1=1
+  AND A.DAT_USG_YN='Y'
+  AND B.DAT_USG_YN='Y'
+  AND B.AMSYS_ATFL_LCA_TXT LIKE  '/%'
+  AND B.AMSYS_ATFL_LCA_TXT NOT LIKE '/ABC%'
+  AND B.AMSYS_ATFL_LCA_TXT NOT LIKE '/OTR%'
+  AND NOT REGEXP_LIKE(B.AMSYS_ATFL_LCA_TXT, '^/[0-9]{8}$')
+  ORDER BY
+   A.AMSYS_ATFL_ID ASC,
+   B.ATFL_SRNO ASC
+					]]>
+				</key_query>
+				
+				<key_inc_query dataSource="db_conn1">
+					<![CDATA[
+					]]>
+				</key_inc_query>
+				
+				<update_queue_query dataSource="db_conn1">
+					<![CDATA[
+SELECT 1 FROM DUAL
+					]]>
+				</update_queue_query>
+				
+				<data_query dataSource="db_conn1">
+					<![CDATA[
+SELECT
+ 	A.AMSYS_ATFL_ID||'_'||B.ATFL_SRNO AS "docid"
+	, '40000' AS "collapse_CD"
+	, A.AMSYS_ATFL_ID AS "amsysAtflId"
+	, B.ATFL_SRNO  AS "atflSrno"
+	, B.AMSYSATFL_NM AS "title"
+	, B.AMSYS_ATFL_PHsc_NM AS "amsysAtflPhscNm"
+	, B.AMSYS_AFTL_LCA_TXT AS 'amsysAtfLcaTxt"
+	, B.AMSYS_ATFL_OTLN_TXT AS "amsysAtflOtlnTXT"
+	, (
+		  SELECT C.DTLS_CD_NM M
+		  FROM SGEOWN.MSGE001ITC AS C
+		  WHERE C.DTLS_CD_ID = (REGEXP_SUBSTR(B.AMSYS_ATFL_LCA_TXT, '[^/]+', 1, 1))
+	) AS "category_full"
+	, B.FILE_OPBL_YN AS "fileOpblYN"
+	, A.DAT_USG_YN AS "msUsgYN"
+	, B.DAT_USG_YN AS "fileUsgYN"
+	, SUBSTR(B.FST_DB_RGS_DTM,0,4) || '-' || SUBSTR(B.FST_DB_RGS_DTM,5,2) || '-' || SUBSTR(B.FST_DB_RGS_DTM,7,2) AS "reg_dtm"
+	, SUBSTR(B.LST_DB_CHG_DTM,0,4)|| '-'|| SUBSTR(B.LST_DB_CHG_DTM,5,2)|| '-' || SUBSTR(B.LST_DB_CHG_DTM,7,2) AS "upd_dtm"
+	, 1 AS "searchyn"
+FROM SGEOWN.MSGE006ITM A
+INNER JOIN
+  SGEOWN.MSGE007ITF B ON A.AMSYS_ATFL_ID = B.AMSYS_ATFL_ID
+WHERE 1=1
+  AND A.DAT_USG_YN='Y'
+  AND B.DAT_USG_YN='Y'
+  AND B.AMSYS_ATFL_LCA_TXT LIKE  '/%'
+  AND B.AMSYS_ATFL_LCA_TXT NOT LIKE '/ABC%'
+  AND B.AMSYS_ATFL_LCA_TXT NOT LIKE '/OTR%'
+  AND NOT REGEXP_LIKE(B.AMSYS_ATFL_LCA_TXT, '^/[0-9]{8}$')
+  AND A.AMSYS_ATFL_ID= :amsysAtflId
+  AND B.ATFL_SRNO= :atflSrno
+  ORDER BY
+   A.AMSYS_ATFL_ID ASC,
+   B.ATFL_SRNO ASC
+					]]>
+				</data_query>
+				
+			</query_info>
+		</data_source>
+	</source>
+</definition>

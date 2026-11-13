@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definition>
+	<!-- 
+	 	<target/>:
+			[필수] 대상 정보 
+	 		- 태그 속성 설명
+	 			* index_name: [필수] 검색엔진 내 색인명
+	 	<result_file/>:
+			[필수] 최종적으로 저장된는 덤프파일 정보
+	 		- 태그 속성 설명
+	 			* file_name: [필수] 덤프파일의 베이스명
+	 			* max_rows: [필수] 한 덤프파일 당 저장되는 최대 로우 수
+	 -->
+	 	
+	<target index_name="idx_auto">
+		<result_file file_name="idx_auto" max_rows="1000" />
+	</target>
+
+	<!--
+		<source/>: 
+			[필수] 
+			- 태그 속성 설명
+			 	* type: notes 또는 rdbms (기본값: rdbms) 
+	 -->
+	<source>
+		<connect_info id="db_conn1">
+			<rdbms>mariadb</rdbms>
+			<driverClass>org.mariadb.jdbc.Driver</driverClass>
+			<url><![CDATA[jdbc:mariadb://122.199.202.101:3306/isearch?allowPublicKeyRetrieval=true&useSSL=false&useUnicode=true&characterEncoding=UTF-8&passwordCharacterEncoding=UTF-8]]></url>
+			<username>root</username>
+			<password>ENC(CHANGE_ME)</password>
+		</connect_info>
+
+		<db_column_info>
+			<!-- 필수 -->
+			<column name="id" role="key" encodeHash="yes" output="no" />
+			<column name="indexAction__" role="index_action" output="no" />
+			<!-- 옵션 -->
+			<column name="indexed_dtm" role="index_time" query="none" />
+		</db_column_info>
+	
+		<index_service use="yes" class_name="com.rayful.bulk.service.es.IndexService" />
+		
+		<data_source delete_not_indexed="yes" last_doc_indexdate="2025-08-29 17:50:12">
+			<query_info>
+				<key_query dataSource="db_conn1">
+					<![CDATA[
+						SELECT
+							KEYWORD AS id
+							, KEYWORD as word
+						FROM TB_AUTO_KWD
+					]]>
+				</key_query>
+				<!-- data_query dataSource="db_conn1">
+					<![CDATA[
+					]]>
+				</data_query-->
+			</query_info>
+		</data_source>
+	</source>
+</definition>
