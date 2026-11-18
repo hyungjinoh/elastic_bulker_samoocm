@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definition>
+	<target index_name="ecm_company_files">
+		<result_file file_name="company_files" max_rows="1000" />
+	</target>
+
+	<source>
+		<connect_info id="db_conn1">
+			<rdbms>oracle</rdbms>
+			<driverClass>oracle.jdbc.OracleDriver</driverClass>
+			<url>jdbc:oracle:thin:@192.168.3.4:1521:ISDB</url>
+			<username>ECMAPI</username>
+			<password>GLT1]TMK2n2%~dZ=6MVh</password>
+		</connect_info>
+
+		<bulker_service class_name="com.rayful.bulk.service.es.BulkerService" />
+		<bulker_crypt use="no" class_name="com.rayful.bulk.encryption.BulkerBaseCrypt" />
+		<index_service use="yes" async="yes" class_name="com.rayful.bulk.service.es.IndexService" />
+		<etc_reader use="yes" class_name="com.samoocm.service.companyEtcReader" />
+		<file_helper use="yes" class_name="com.rayful.bulk.attach.DiskFileHelper" />
+		<!--
+			swcm_projects.xml과 동일한 패턴. 파일(첨부) 1건 = 1 row.
+			키는 docSeriesId + '_' + fileId (한 문서에 첨부가 여러 개일 수 있어
+			docSeriesId만으로는 유일하지 않음 — 색인 설계 요약 시트 결정 사항).
+		-->
+
+		<db_column_info>
+			<!-- 필수 -->
+			<column name="dockey" role="key" />
+			<column name="indexAction__" role="index_action" output="no" />
+			<column name="indexed_dtm" role="index_time" />
+			<column name="aclPrincipalTags" separator="\|" />
+			<column name="sharePrincipalTags" separator="\|" />
+
+			<!-- 본문 추출용: fileRepositoryPath/attachFullName은 data_query 컬럼을 그대로 참조 -->
+			<column name="attach_path" role="file_path" query="file_query" />
+			<column name="attach_nm" role="file_name" query="file_query" />
+		</db_column_info>
+
+		<es_field_info>
+			<field name="fileContent" role="file_data" index="yes" />
+		</es_field_info>
+
+		<data_source last_doc_indexdate="2026-11-17 16:06:32" delete_not_indexed="yes">
+			<query_info>
+				<key_query dataSource="db_conn1" cursor_use="no">
+					<![CDATA[
+SELECT
+    X.DOC_SERIES_ID                        AS "docSeriesId",
+    X.FILE_ID                              AS "fileId",
+    X.DOC_SERIES_ID || '_' || X.FILE_ID    AS "dockey"
+FROM METAECM.V_ECM_FILES X
+WHERE X.DOC_IS_CURRENT = 1
+
+-- ===================================================================================
+-- [테스트 색인용] 특정 프로젝트 3건에 속한 파일만 대상으로 할 때. 전체 색인 시 아래 2줄 주석 처리
+-- ===================================================================================
+-- AND X.FILE_ID='778f3d99-63a9-44eb-a0e9-a2baae4b8a43'
+AND X.MAP_NAME='전사문서'
+AND ROWNUM <= 100
+-- ===================================================================================
+-- [운영 전체 색인용] 위 PROJECTNO 조건을 주석 처리하고 이 줄의 주석만 해제
+-- ===================================================================================
+-- AND 1=1
+
+ORDER BY X.DOC_SERIES_ID, X.FILE_ID
+					]]>
+				</key_query>
+
+				<key_inc_query dataSource="db_conn1">
+					<![CDATA[
+SELECT 1 FROM DUAL
+					]]>
+				</key_inc_query>
+
+				<update_queue_query dataSource="db_conn1">
+					<![CDATA[
+SELECT 1 FROM DUAL
+					]]>
+				</update_queue_query>
+
+				<data_query dataSource="db_conn1">
+					<![CDATA[
+-- =====================================================================================
+--   [4-B] 파일(첨부) 레벨 색인 — "통합검색 > 부서문서 > 파일" 선택 시 사용
+--   -------------------------------------------------------------------------------------
+--   V_ECM_FILES는 이미 DOC_IS_CURRENT=1(최신 버전)만 추려내므로 ROOT_ID 경유 조인이 불필요.
+--   ACL은 파일(문서)의 DOC_ACL_ID로, 공유는 V_ECM_SHARES(TARGET_TYPE='DOCUMENT')를
+--   DOC_SERIES_ID로 조인해서 판단한다(TARGET_ID는 공유 시점 버전이라 DOC_SERIES_ID가 안전).
+--   ===================================================================================== */
+WITH ACL_OWNER_FLAG AS (
+    SELECT DISTINCT ACL_ID FROM METAECM.V_ECM_ACL_READERS
+    WHERE PRINCIPAL_TYPE = 'OWNER' AND CAN_READ = 1
+),
+     ACL_OGROUP_FLAG AS (
+         SELECT DISTINCT ACL_ID FROM METAECM.V_ECM_ACL_READERS
+         WHERE PRINCIPAL_TYPE = 'OGROUP' AND CAN_READ = 1
+     )
+SELECT
+    -- ── 파일/문서 식별 ───────────────────────────────────────────────
+    X.DOC_SERIES_ID                        AS "docSeriesId",   -- 문서 시리즈 ID(버전 공통 키)
+    X.FILE_ID                              AS "fileId",        -- 파일 ID
+    X.DOC_SERIES_ID || '_' || X.FILE_ID    AS "dockey",         -- 키값
+    X.DOC_ID                               AS "docId",         -- 문서 ID(최신 버전)
+    X.DOC_NAME                             AS "docName",       -- 문서명
+    X.FILE_NAME                            AS "fileName",      -- 파일명
+    X.FILE_EXTENSION                       AS "fileExtension", -- 파일 확장자
+    X.FILE_CONTENT_SIZE                    AS "fileContentSize", -- 파일 용량
+    X.DOC_DESCRIPTION                      AS "docDescription",
+    X.DOC_TYPE_NAME                        AS "docTypeName",
+    X.DOC_STATUS                           AS "docStatus",
+    X.DOC_CODE                             AS "docCode",
+    X.DOC_STANDARD                         AS "docStandard",
+    X.DOC_CREATOR_ID                       AS "docCreatorId",
+    X.DOC_CREATOR_NAME                     AS "docCreatorName",
+    TO_CHAR(X.DOC_CREATED_DATE, 'YYYY-MM-DD"T"HH24:MI:SS') AS "docCreatedDate",
+    X.DOC_UPDATER_ID                       AS "docUpdaterId",
+    X.DOC_UPDATER_NAME                     AS "docUpdaterName",
+    TO_CHAR(X.DOC_UPDATED_DATE, 'YYYY-MM-DD"T"HH24:MI:SS') AS "docUpdatedDate",
+
+    -- ── 폴더/영역 ─────────────────────────────────────────────────────
+    X.FOLDER_ID                            AS "folderId",
+    X.FOLDER_PATH                          AS "folderPath",
+    X.MAP_NAME                             AS "gnbTabName",      -- 전사문서/부서문서/프로젝트
+	'90003'								  AS  "collapseCd",
+
+    -- ── 소속 프로젝트 ID + 프로젝트 필터용 속성(비정규화) ──────────────
+    X.PROJECT_ID                           AS "projectId",
+--    TO_CHAR(P.DESIGNSTART_DATE, 'YYYY-MM-DD"T"HH24:MI:SS') AS "designStartDate",
+    -- ── 파일 자체 메타 ───────────────────────────────────────────────
+    X.FILE_IS_ORIGIN                       AS "fileIsOrigin",
+    X.ITEM_INDEX                           AS "fileItemIndex",
+    X.FILE_CREATOR_ID                      AS "fileCreatorId",
+    X.FILE_CREATOR_NAME                    AS "fileCreatorName",
+    TO_CHAR(X.FILE_CREATED_DATE, 'YYYY-MM-DD"T"HH24:MI:SS') AS "fileCreatedDate",
+    X.FILE_REPOSITORY_NAME                 AS "fileRepositoryName",
+    X.FILE_REPOSITORY_WORKSPACE            AS "fileRepositoryWorkspace",
+    -- 파일경로
+--    X.FILE_REPOSITORY_PATH                 AS "fileRepositoryPath",
+    'C:\workspace\samoocm\synap_v4\in\review.pptx'    AS "fileRepositoryPath",
+--    X.FILE_NAME || '.' || X.FILE_EXTENSION AS "attachFullName",  -- file_helper가 열 실제 파일명(확장자 포함)
+
+
+    -- ── 보안등급(프로젝트 보안등급을 뷰가 이미 해석해서 내려줌) ─────────
+    X.SECURITY_LEVEL                       AS "docSecurityLevel",
+    X.SECURITY_LEVEL_NM                    AS "docSecurityLevelNm",
+
+    -- ── ACL: 문서 자체 ACL_ID 기준 권한 태그 ─────────────────────────
+    X.DOC_ACL_ID                           AS "docAclId",
+    (
+        (SELECT LISTAGG(R.PRINCIPAL_TYPE || ':' || R.PRINCIPAL_ID, '|')
+                        WITHIN GROUP (ORDER BY R.PRINCIPAL_TYPE, R.PRINCIPAL_ID)
+         FROM METAECM.V_ECM_ACL_READERS R
+         WHERE R.ACL_ID = X.DOC_ACL_ID
+           AND R.CAN_READ = 1
+           AND R.PRINCIPAL_TYPE NOT IN ('OWNER', 'OGROUP'))
+            ||
+        (CASE WHEN EXISTS (SELECT 1 FROM ACL_OWNER_FLAG O WHERE O.ACL_ID = X.DOC_ACL_ID)
+                  THEN '|USER:' || TO_CHAR(X.DOC_CREATOR_ID) END)
+            ||
+        (CASE WHEN EXISTS (SELECT 1 FROM ACL_OGROUP_FLAG G WHERE G.ACL_ID = X.DOC_ACL_ID)
+                  THEN '|' || (SELECT LISTAGG('DEPT:' || UG.GROUP_ID, '|')
+                                              WITHIN GROUP (ORDER BY UG.GROUP_ID)
+                               FROM METAECM.V_ECM_USER_GROUPS UG
+                               WHERE UG.USER_ID = X.DOC_CREATOR_ID)
+            END)
+        )                                        AS "aclPrincipalTags",
+
+    -- ── 공유(SHARE): 문서 공유 대상 태그(DOC_SERIES_ID 기준) ───────────
+    (SELECT LISTAGG(
+                CASE WHEN S.SHARED_IS_ALIAS = 1 THEN 'ALIAS:' || S.SHARED_USER_ID
+                     WHEN S.SHARE_TYPE = 1 THEN 'USER:' || S.SHARED_USER_ID
+                     ELSE 'DEPT:' || S.SHARED_USER_ID END, '|')
+                WITHIN GROUP (ORDER BY S.SHARED_USER_ID)
+     FROM METAECM.V_ECM_SHARES S
+     WHERE S.TARGET_TYPE = 'DOCUMENT'
+       AND S.DOC_SERIES_ID = X.DOC_SERIES_ID
+       AND BITAND(NVL(S.AUTHORITY, 0), 2) = 2)   AS "sharePrincipalTags"  -- 공유 권한 태그('|' 구분, 읽기(bit2) 권한만)
+
+FROM METAECM.V_ECM_FILES X
+WHERE X.DOC_IS_CURRENT = 1
+AND X.MAP_NAME='전사문서'
+AND X.DOC_SERIES_ID = :docSeriesId
+AND X.FILE_ID = :fileId
+					]]>
+				</data_query>
+				<file_query id="file_query" dataSource="db_conn1">
+					<![CDATA[
+SELECT
+    -- ===================================================================================
+    -- [테스트용] 고정 로컬 경로. 파이프라인 검증 후 아래 운영용으로 교체
+    -- ===================================================================================
+    -- 'C:\workspace\samoocm\synap_v4\in\f2e15b1d0d2367ff7bca58e3b3cce7520be43cf21ca80dcb8ead888f4a6e8ee7'   AS "attach_path",
+       'C:\workspace\samoocm\synap_v4\in\review.pptx'   AS "attach_path",
+    -- X.FILE_NAME || '.' || X.FILE_EXTENSION           AS "attach_nm"
+	X.FILE_NAME            AS "attach_nm"
+
+    -- ===================================================================================
+    -- [운영용] DiskFileHelper가 바로 열 수 있는 실제 마운트 경로로 확정되면 아래로 교체
+    --   (FILE_REPOSITORY_PATH가 내부 저장소 경로/ID라 그대로 쓸 수 없을 수 있음 —
+    --    REPOSITORY_NAME/REPOSITORY_WORKSPACE와 결합한 실제 접근 경로인지 운영팀 확인 필요)
+    -- ===================================================================================
+    -- X.FILE_REPOSITORY_PATH                        AS "attach_path",
+    -- X.FILE_NAME || '.' || X.FILE_EXTENSION         AS "attach_nm"
+FROM METAECM.V_ECM_FILES X
+WHERE X.DOC_IS_CURRENT = 1
+AND X.DOC_SERIES_ID = :docSeriesId
+AND X.FILE_ID = :fileId
+					]]>
+				</file_query>
+
+			</query_info>
+		</data_source>
+	</source>
+</definition>

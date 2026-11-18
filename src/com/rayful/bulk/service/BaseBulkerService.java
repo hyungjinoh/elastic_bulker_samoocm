@@ -30,6 +30,7 @@ import com.google.gson.Gson;
 import com.rayful.bulk.attach.IAttachFileHelper;
 import com.rayful.bulk.concurrent.BlockingRejectedExecutionHandler;
 import com.rayful.bulk.dao.JdbcDAO;
+import com.rayful.bulk.ocr.OcrClient;
 import com.rayful.bulk.util.BulkerUtils;
 import com.rayful.bulk.util.CodecUtil;
 import com.rayful.bulk.util.Utils;
@@ -72,6 +73,10 @@ public abstract class BaseBulkerService implements IBulkerService{
 	protected final long allowFileMaxSize;
 	protected Map<String, String> allowExtMap = null;
 	protected final boolean isExecDrmDecode;
+	
+	// 2026.11.18 OCR(이미지/스캔 문서 텍스트 인식) 설정
+	protected Map<String, String> ocrExtMap = null;   // OCR 처리 대상 확장자(대문자). null이면 미설정
+	protected final OcrClient ocrClient;              // null이면 OCR 비활성화
 	
 	protected final int maxRows;
 	protected final boolean printDetail;
@@ -135,6 +140,28 @@ public abstract class BaseBulkerService implements IBulkerService{
 			isExecDrmDecode = false;
 		}
 		
+		// 2026.11.18 OCR 대상 확장자 + OCR 클라이언트 구성
+		// - BULKER.OCR.ALLOWED_EXT 에 명시된 확장자는 외부 텍스트 필터(snf_exe/Tika) 대신 OCR API로 처리한다.
+		// - BULKER.OCR.URL 이 비어있으면 OCR 기능 자체를 비활성화한다.
+		String ocrExt = this.prop.getProperty("BULKER.OCR.ALLOWED_EXT");
+		if(ocrExt != null && ocrExt.trim().length() > 0) {
+			this.ocrExtMap = new HashMap<String, String>();
+			for(String ext : ocrExt.toUpperCase().split(",")) {
+				if(ext.trim().length() > 0) {
+					this.ocrExtMap.put(ext.trim(), null);
+				}
+			}
+		}
+		String ocrUrl = this.prop.getProperty("BULKER.OCR.URL");
+		if(ocrUrl != null && ocrUrl.trim().length() > 0 && this.ocrExtMap != null) {
+			this.ocrClient = new OcrClient(this.prop);
+		} else {
+			this.ocrClient = null;
+			if(this.ocrExtMap != null) {
+				logger.warn("\"BULKER.OCR.ALLOWED_EXT\" is set but \"BULKER.OCR.URL\" is empty. OCR is disabled.");
+			}
+		}
+		
 		// 2024.09.01 max rows 설정 추가
 		this.maxRows = (Integer) this.prop.get("__RUNTIME.MAX_ROWS");
 		
@@ -186,6 +213,11 @@ public abstract class BaseBulkerService implements IBulkerService{
 	public void destroy() {
 		if(this.fileHelper != null) {
 			this.fileHelper.destroy();
+		}
+		
+		// 2026.11.18 OCR 클라이언트 종료
+		if(this.ocrClient != null) {
+			this.ocrClient.close();
 		}
 		
 		if(this.cursorItemReader != null) {
@@ -869,6 +901,11 @@ public abstract class BaseBulkerService implements IBulkerService{
 	
 			fileLogVO.setTotalCount(fileDataList.size());
 			for (Map<String, Object> fileMap : fileDataList) {
+				// 2026.11.18 반복 간 임시파일 참조가 남아 finally에서 이전 파일을 다시 건드리지 않도록 초기화
+				downloadFile = null;
+				sourceFile = null;
+				filteredFile = null;
+				
 				remoteFilePath = (String) fileMap.get(this.dfVO.column.getFilePathColumnName());
 				if(remoteFilePath == null) {
 					throw new NullPointerException("Can't read remoteFilePath: columnName=" + this.dfVO.column.getFilePathColumnName());
@@ -890,7 +927,8 @@ public abstract class BaseBulkerService implements IBulkerService{
 					}
 				}
 				
-				isAllowExt = allowExt(showFileName); // 사용가능 확장자
+				// 사용가능 확장자. OCR 대상 확장자(이미지/스캔)는 일반 필터 허용목록에 없어도 통과시킨다.
+				isAllowExt = allowExt(showFileName) || isOcrTarget(showFileName);
 				if(isAllowExt) {
 					try {
 						downloadFile = this.fileHelper.download(remoteFilePath, downFileName);
@@ -902,19 +940,34 @@ public abstract class BaseBulkerService implements IBulkerService{
 								sourceFile = downloadFile;
 							}
 							
-							filteredFile = new File(sourceFile.getPath() + ".txt");
-							
-							// 파일로 부터 텍스트를 추출한다.
-							this.fileHelper.filterText(sourceFile, Utils.getFileExt(showFileName), filteredFile);
-							if(filteredFile.exists()) {
-								logger.debug("Success to Extract text from file.");
-								Utils.getFileText(filteredFile.getAbsolutePath(), "\n", sBuilder);
-								sBuilder.append(FILE_SEPERATOR);
-								fileLogVO.increaseSuccessCount();
-
+							if(isOcrTarget(showFileName)) {
+								// 2026.11.18 이미지/스캔 문서 → OCR API로 텍스트 인식 후 fileContent에 색인
+								//  (복호화가 끝난 sourceFile의 실제 바이트를 그대로 전송)
+								String ocrText = this.ocrClient.extractText(sourceFile, showFileName);
+								if(ocrText != null && ocrText.length() > 0) {
+									logger.debug("Success to OCR text from file. [{}]", showFileName);
+									sBuilder.append(ocrText);
+									sBuilder.append(FILE_SEPERATOR);
+									fileLogVO.increaseSuccessCount();
+								} else {
+									logger.warn("OCR returned empty text. [{}]", showFileName);
+									fileLogVO.increaseWarnCount("OCR returned empty text. [" + showFileName + "]");
+								}
 							} else {
-								logger.warn("Fail to Extract text from file [{}]", filteredFile.getPath());
-								fileLogVO.increaseWarnCount("Fail to Extract text from file " + "[" + filteredFile.getPath() + "]");
+								filteredFile = new File(sourceFile.getPath() + ".txt");
+								
+								// 파일로 부터 텍스트를 추출한다.
+								this.fileHelper.filterText(sourceFile, Utils.getFileExt(showFileName), filteredFile);
+								if(filteredFile.exists()) {
+									logger.debug("Success to Extract text from file.");
+									Utils.getFileText(filteredFile.getAbsolutePath(), "\n", sBuilder);
+									sBuilder.append(FILE_SEPERATOR);
+									fileLogVO.increaseSuccessCount();
+
+								} else {
+									logger.warn("Fail to Extract text from file [{}]", filteredFile.getPath());
+									fileLogVO.increaseWarnCount("Fail to Extract text from file " + "[" + filteredFile.getPath() + "]");
+								}
 							}
 						} else {
 							logger.warn("Can't find downloaded(copied) file [{}]", downloadFile.getPath());
@@ -931,8 +984,11 @@ public abstract class BaseBulkerService implements IBulkerService{
 
 //////////////////////////////////////////////
 						// 다운로드 받은 파일 경로 하위의 모든 것 삭제
-						logger.info("다음 경로의 하위 경로내용 모든것 삭제 수행: {} ", Paths.get(downloadFile.getParentFile().getAbsolutePath()));
-						deleteAllChildren(Paths.get(downloadFile.getParentFile().getAbsolutePath()));
+						// (download() 자체가 실패(예: 원본 파일이 존재하지 않음)하면 downloadFile이 null일 수 있으므로 방어)
+						if(downloadFile != null) {
+							logger.info("다음 경로의 하위 경로내용 모든것 삭제 수행: {} ", Paths.get(downloadFile.getParentFile().getAbsolutePath()));
+							deleteAllChildren(Paths.get(downloadFile.getParentFile().getAbsolutePath()));
+						}
 			/////////////////////////////////////////////////////////////
 					}
 					
@@ -968,6 +1024,27 @@ public abstract class BaseBulkerService implements IBulkerService{
 		}
 		
 		return isResult;
+	}
+	
+	/**
+	 * OCR(이미지/스캔 문서 텍스트 인식) 처리 대상 확장자인지 판단한다.
+	 * <p/>
+	 * OCR 클라이언트가 활성화되어 있고(BULKER.OCR.URL 설정), 논리 파일명의 확장자가
+	 * BULKER.OCR.ALLOWED_EXT 목록에 포함될 때만 true.
+	 * 
+	 * @param fileName 파일명(논리 파일명)
+	 * @return OCR 대상이면 true, 아니면 false
+	 * @since 2026.11.18
+	 */
+	protected boolean isOcrTarget(String fileName) {
+		if(this.ocrClient == null || this.ocrExtMap == null) {
+			return false;
+		}
+		String fileExt = Utils.getFileExt(fileName);
+		if(fileExt == null) {
+			return false;
+		}
+		return this.ocrExtMap.containsKey(fileExt.toUpperCase());
 	}
 	
 	protected void printLog(int current, BulkerLogVO bulkerLogVO, DataLogVO dataLogVO, String indexAction) {

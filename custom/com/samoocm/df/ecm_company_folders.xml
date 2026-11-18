@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definition>
+	<target index_name="ecm_company_folders">
+		<result_file file_name="company_folders" max_rows="1000" />
+	</target>
+
+	<source>
+		<connect_info id="db_conn1">
+			<rdbms>oracle</rdbms>
+			<driverClass>oracle.jdbc.OracleDriver</driverClass>
+			<url>jdbc:oracle:thin:@192.168.3.4:1521:ISDB</url>
+			<username>ECMAPI</username>
+			<password>GLT1]TMK2n2%~dZ=6MVh</password>
+		</connect_info>
+
+		<bulker_service class_name="com.rayful.bulk.service.es.BulkerService" />
+		<bulker_crypt use="no" class_name="com.rayful.bulk.encryption.BulkerBaseCrypt" />
+		<index_service use="no" async="yes" class_name="com.rayful.bulk.service.es.IndexService" />
+		<etc_reader use="yes" class_name="com.samoocm.service.projectEtcReader" />
+
+		<!-- swcm_projects.xml과 동일한 패턴. 폴더 1건 = 1 row. 키는 folderId(이미 유일). -->
+
+		<db_column_info>
+			<!-- 필수 -->
+			<column name="dockey" role="key" />
+			<column name="indexAction__" role="index_action" output="no" />
+			<column name="indexed_dtm" role="index_time" />
+			<column name="aclPrincipalTags" separator="\|" />
+			<column name="sharePrincipalTags" separator="\|" />
+		</db_column_info>
+
+		<data_source last_doc_indexdate="2026-11-17 16:44:29" delete_not_indexed="yes">
+			<query_info>
+				<key_query dataSource="db_conn1" cursor_use="no">
+					<![CDATA[
+SELECT
+    D.FOLDER_ID                            AS "folderId",
+    D.FOLDER_ID                            AS "dockey"
+FROM METAECM.V_ECM_FOLDERS D
+WHERE 1=1
+AND D.MAP_NAME='전사문서'
+-- ===================================================================================
+-- [테스트 색인용] 특정 프로젝트 3건에 속한 폴더만 대상으로 할 때. 전체 색인 시 아래 2줄 주석 처리
+-- ===================================================================================
+AND ROWNUM <= 10
+-- ===================================================================================
+-- [운영 전체 색인용]  이 줄의 주석만 해제
+-- ===================================================================================
+-- AND 1=1
+
+ORDER BY D.FOLDER_ID
+					]]>
+				</key_query>
+
+				<key_inc_query dataSource="db_conn1">
+					<![CDATA[
+SELECT 1 FROM DUAL
+					]]>
+				</key_inc_query>
+
+				<update_queue_query dataSource="db_conn1">
+					<![CDATA[
+SELECT 1 FROM DUAL
+					]]>
+				</update_queue_query>
+
+				<data_query dataSource="db_conn1">
+					<![CDATA[
+-- =====================================================================================
+--   [4-C] 폴더 레벨 색인 — "통합검색 > 전사문서 > 폴더" 선택 시 사용
+--   -------------------------------------------------------------------------------------
+--   ACL은 폴더 자체 ACL_ID로, 공유는 V_ECM_SHARES(TARGET_TYPE='FOLDER')를
+--   FOLDER_ID로 직접 조인해서 판단한다.
+--   ===================================================================================== */
+WITH ACL_OWNER_FLAG AS (
+    SELECT DISTINCT ACL_ID FROM METAECM.V_ECM_ACL_READERS
+    WHERE PRINCIPAL_TYPE = 'OWNER' AND CAN_READ = 1
+),
+     ACL_OGROUP_FLAG AS (
+         SELECT DISTINCT ACL_ID FROM METAECM.V_ECM_ACL_READERS
+         WHERE PRINCIPAL_TYPE = 'OGROUP' AND CAN_READ = 1
+     )
+SELECT
+    -- ── 폴더 식별 ───────────────────────────────────────────────────
+    D.FOLDER_ID                            AS "folderId",
+    D.FOLDER_ID                            AS "dockey",
+    D.NAME                                 AS "folderName",
+    D.NAME_EN                              AS "folderNameEn",
+    D.NAME_CN                              AS "folderNameCn",
+    D.PARENT_ID                            AS "parentFolderId",
+    D."TYPE"                               AS "folderType",
+    D.STATUS                               AS "folderStatus",
+    D.DESCRIPTION                          AS "folderDescription",
+    D.FOLDER_PATH                          AS "folderPath",
+    D.MAP_NAME                             AS "gnbTabName",       -- 전사문서/부서문서/프로젝트
+    D.CREATOR_ID                           AS "creatorId",
+    D.CREATOR_NAME                         AS "creatorName",
+    TO_CHAR(D.CREATED_DATE, 'YYYY-MM-DD"T"HH24:MI:SS') AS "createdDate",
+    TO_CHAR(D.UPDATED_DATE, 'YYYY-MM-DD"T"HH24:MI:SS') AS "updatedDate",
+    '90006'								  AS  "collapseCd",
+
+    -- ── ACL: 폴더 자체 ACL_ID 기준 권한 태그 ─────────────────────────
+    D.ACL_ID                               AS "folderAclId",
+    (
+        (SELECT LISTAGG(R.PRINCIPAL_TYPE || ':' || R.PRINCIPAL_ID, '|')
+                        WITHIN GROUP (ORDER BY R.PRINCIPAL_TYPE, R.PRINCIPAL_ID)
+         FROM METAECM.V_ECM_ACL_READERS R
+         WHERE R.ACL_ID = D.ACL_ID
+           AND R.CAN_READ = 1
+           AND R.PRINCIPAL_TYPE NOT IN ('OWNER', 'OGROUP'))
+            ||
+        (CASE WHEN EXISTS (SELECT 1 FROM ACL_OWNER_FLAG O WHERE O.ACL_ID = D.ACL_ID)
+                  THEN '|USER:' || TO_CHAR(D.CREATOR_ID) END)
+            ||
+        (CASE WHEN EXISTS (SELECT 1 FROM ACL_OGROUP_FLAG G WHERE G.ACL_ID = D.ACL_ID)
+                  THEN '|' || (SELECT LISTAGG('DEPT:' || UG.GROUP_ID, '|')
+                                              WITHIN GROUP (ORDER BY UG.GROUP_ID)
+                               FROM METAECM.V_ECM_USER_GROUPS UG
+                               WHERE UG.USER_ID = D.CREATOR_ID)
+            END)
+        )                                        AS "aclPrincipalTags",
+
+    -- ── 공유(SHARE): 폴더 공유 대상 태그(FOLDER_ID 기준) ───────────────
+    (SELECT LISTAGG(
+                CASE WHEN S.SHARED_IS_ALIAS = 1 THEN 'ALIAS:' || S.SHARED_USER_ID
+                     WHEN S.SHARE_TYPE = 1 THEN 'USER:' || S.SHARED_USER_ID
+                     ELSE 'DEPT:' || S.SHARED_USER_ID END, '|')
+                WITHIN GROUP (ORDER BY S.SHARED_USER_ID)
+     FROM METAECM.V_ECM_SHARES S
+     WHERE S.TARGET_TYPE = 'FOLDER'
+       AND S.TARGET_ID = D.FOLDER_ID
+       AND BITAND(NVL(S.AUTHORITY, 0), 2) = 2)   AS "sharePrincipalTags"  -- 공유 권한 태그('|' 구분, 읽기(bit2) 권한만)
+
+FROM METAECM.V_ECM_FOLDERS D
+WHERE D.FOLDER_ID = :folderId
+AND D.MAP_NAME='전사문서'
+					]]>
+				</data_query>
+
+			</query_info>
+		</data_source>
+	</source>
+</definition>

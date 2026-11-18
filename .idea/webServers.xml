@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="3c765ff8-27a3-4563-b801-f2b0c0293ceb" name="192.168.3.210">
+        <fileTransfer rootFolder="/repository/rayful/elastic_bulker" accessType="SFTP" host="192.168.3.210" port="22" sshConfigId="1b10dd5f-760f-41a8-b824-10f2271ccde9" sshConfig="cmdbusr@192.168.3.210:22 password">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" keepAliveTimeout="0" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>

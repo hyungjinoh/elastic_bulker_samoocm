@@ -23,7 +23,7 @@ public class CryptUtils {
 	/**
 	 * 설정값이 ENC(...) 형태이면 복호화하여 평문을 리턴하고, 아니면 원문을 그대로 리턴한다.
 	 * <p/>
-	 * 메인 config.properties 는 Jasypt 프로퍼티 후처리를 거치지 않으므로, ES API Key 등
+	 * 메인 config.properties.dev.local 는 Jasypt 프로퍼티 후처리를 거치지 않으므로, ES API Key 등
 	 * 중요정보를 ENC(...) 로 설정한 경우 이 메서드로 복호화해야 한다.
 	 * 복호화는 Crypt CLI 와 동일한 BulkerBaseCrypt(환경변수 BULKER_CRYPT_PASSWORD) 를 사용한다.
 	 *

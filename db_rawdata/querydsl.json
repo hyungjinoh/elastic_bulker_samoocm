@@ -1,0 +1,13 @@
+
+//특정 id 조회
+POST ecm_dept_files/_search
+{
+  "query": {
+    "match": {
+      "_id": "0e14c8c0-cb49-438a-8620-b49befb836f9_643df9a2-1409-4314-87c3-47be3384c55d"
+    }
+  },
+  "_source": ["fileContent"]
+}
+
+

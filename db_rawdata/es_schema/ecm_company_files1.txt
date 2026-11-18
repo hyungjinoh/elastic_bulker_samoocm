@@ -1,0 +1,442 @@
+// ===================================================================
+// ecm_company_files1 — 파일(문서) 레벨 색인 (통합검색 > 전사문서 > 파일)
+// ===================================================================
+
+PUT ecm_company_files1
+{
+"settings": {
+    "index": {
+      "max_ngram_diff": "50",
+      "analysis": {
+        "char_filter": {
+          "remove_whitespace": {
+            "pattern": """\s+""",
+            "type": "pattern_replace",
+            "replacement": ""
+          },
+          "remove_special_chars": {
+            "pattern": """[^\w\s가-힣]""",
+            "type": "pattern_replace",
+            "replacement": " "
+          }
+        },
+        "filter": {
+          "stop_filtering": {
+            "type": "stop",
+            "stopwords_path": "dict/STOP_DEFAULT.txt"
+          },
+          "synonym_filter": {
+            "type": "synonym_graph",
+            "updateable": "true",
+            "synonyms_path": "dict/SYNO_DEFAULT.txt",
+            "lenient": "true"
+          },
+          "nori_posfilter": {
+            "type": "nori_part_of_speech",
+            "stoptags": [
+              "E",
+              "IC",
+              "J",
+              "MAG",
+              "MAJ",
+              "MM",
+              "NA",
+              "SC",
+              "SE",
+              "SF",
+              "SP",
+              "SSC",
+              "SH",
+              "SSO",
+              "SY",
+              "UNA",
+              "UNKNOWN",
+              "VA",
+              "VCN",
+              "VCP",
+              "VSV",
+              "VV",
+              "VX",
+              "XPN",
+              "XR",
+              "XSA",
+              "XSN",
+              "XSV"
+            ]
+          },
+          "edge_ngram_filter_front": {
+            "min_gram": "1",
+            "side": "front",
+            "type": "edge_ngram",
+            "max_gram": "64"
+          },
+          "starstory_chosung_filter": {
+            "type": "chosung_filter"
+          },
+          "starstory_jamo_filter": {
+            "type": "jamo_filter"
+          },
+          "starstory_eng2kor_filter": {
+            "type": "eng2kor_filter"
+          },
+          "auto_complete_filter": {
+            "type": "ngram",
+            "min_gram": "1",
+            "max_gram": "50"
+          }
+        },
+        "tokenizer": {
+          "nori_user_dict": {
+            "type": "nori_tokenizer",
+            "user_dictionary": "dict/USER_DEFAULT.txt",
+            "decompound_mode": "discard"
+          },
+          "edge_ngram_tokenizer": {
+            "token_chars": [
+              "letter",
+              "digit"
+            ],
+            "min_gram": "1",
+            "type": "edge_ngram",
+            "max_gram": "64"
+          },
+          "ngram_tokenizer": {
+            "token_chars": [
+              "letter",
+              "digit"
+            ],
+            "type": "ngram",
+            "max_gram": "5"
+          },
+          "auto_ngram_tokenizer": {
+            "token_chars": [
+              "letter",
+              "digit"
+            ],
+            "type": "ngram",
+            "min_gram": "2",
+            "max_gram": "3"
+          },
+          "path_hier_tokenizer": { "type": "path_hierarchy", "delimiter": "/" }
+        },
+        "analyzer": {
+          "chosung_index_analyzer": {
+            "filter": [
+              "starstory_chosung_filter",
+              "lowercase",
+              "trim",
+              "edge_ngram_filter_front"
+            ],
+            "char_filter": [
+              "remove_whitespace"
+            ],
+            "type": "custom",
+            "tokenizer": "keyword"
+          },
+          "chosung_search_analyzer": {
+            "filter": [
+              "starstory_chosung_filter",
+              "lowercase",
+              "trim"
+            ],
+            "char_filter": [
+              "remove_whitespace"
+            ],
+            "type": "custom",
+            "tokenizer": "keyword"
+          },
+          "eng2kor_analyzer": {
+            "filter": [
+              "starstory_jamo_filter",
+              "lowercase",
+              "edge_ngram_filter_front"
+            ],
+            "char_filter": [
+              "remove_whitespace"
+            ],
+            "type": "custom",
+            "tokenizer": "keyword"
+          },
+          "eng2kor_search_analyzer": {
+            "filter": [
+              "starstory_eng2kor_filter",
+              "starstory_jamo_filter",
+              "lowercase"
+            ],
+            "char_filter": [
+              "remove_whitespace"
+            ],
+            "type": "custom",
+            "tokenizer": "keyword"
+          },
+          "ngram_analyzer": {
+            "filter": [
+              "lowercase"
+            ],
+            "char_filter": [
+              "remove_whitespace"
+            ],
+            "tokenizer": "ngram_tokenizer"
+          },
+          "ngram_search_analyzer": {
+            "filter": [
+              "lowercase"
+            ],
+            "tokenizer": "standard"
+          },
+          "auto_ngram_analyzer": {
+            "filter": [
+              "lowercase"
+            ],
+            "char_filter": [
+              "remove_whitespace"
+            ],
+            "tokenizer": "auto_ngram_tokenizer"
+          },
+          "nori_analyzer": {
+            "filter": [
+              "lowercase",
+              "snowball",
+              "nori_posfilter",
+              "nori_readingform"
+            ],
+            "char_filter": [
+              "remove_special_chars"
+            ],
+            "type": "custom",
+            "tokenizer": "nori_user_dict"
+          },
+          "nori_search_analyzer": {
+            "filter": [
+              "lowercase",
+              "snowball",
+              "synonym_filter",
+              "nori_posfilter",
+              "nori_readingform",
+              "stop_filtering"
+            ],
+            "char_filter": [
+              "remove_special_chars"
+            ],
+            "type": "custom",
+            "tokenizer": "nori_user_dict"
+          },
+          "jamo_analyzer": {
+            "filter": [
+              "starstory_jamo_filter",
+              "lowercase",
+              "trim",
+              "edge_ngram_filter_front"
+            ],
+            "char_filter": [
+              "remove_special_chars",
+              "remove_whitespace"
+            ],
+            "type": "custom",
+            "tokenizer": "edge_ngram_tokenizer"
+          },
+          "jamo_search_analyzer": {
+            "filter": [
+              "starstory_jamo_filter",
+              "lowercase",
+              "trim"
+            ],
+            "char_filter": [
+              "remove_special_chars",
+              "remove_whitespace"
+            ],
+            "type": "custom",
+            "tokenizer": "keyword"
+          },
+          "path_hierarchy_analyzer": {
+            "type": "custom",
+            "tokenizer": "path_hier_tokenizer"
+          }
+        }
+      },
+      "number_of_shards": "1",
+      "number_of_replicas": "1"
+    }
+  },
+  "mappings": {
+    "properties": {
+      "docSeriesId": {
+        "type": "keyword"
+      },
+      "fileId": {
+        "type": "keyword"
+      },
+      "docId": {
+        "type": "keyword"
+      },
+      "docName": {
+        "type": "text",
+        "analyzer": "nori_analyzer", 
+        "search_analyzer": "nori_search_analyzer",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 512
+          }
+        }
+      },
+      "fileName": {
+        "type": "text",
+        "analyzer": "nori_analyzer", 
+        "search_analyzer": "nori_search_analyzer",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 512
+          }
+        }
+      },
+      "fileExtension": {
+        "type": "keyword"
+      },
+      "fileContentSize": {
+        "type": "long"
+      },
+      "docDescription": {
+        "type": "text",
+        "analyzer": "nori_analyzer", 
+        "search_analyzer": "nori_search_analyzer",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 512
+          }
+        }
+      },
+      "docTypeName": {
+        "type": "text",
+        "analyzer": "nori_analyzer", 
+        "search_analyzer": "nori_search_analyzer",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 512
+          }
+        }
+      },
+      "docStatus": {
+        "type": "keyword"
+      },
+      "docCode": {
+        "type": "keyword"
+      },
+      "docStandard": {
+        "type": "text",
+        "analyzer": "nori_analyzer", 
+        "search_analyzer": "nori_search_analyzer",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 512
+          }
+        }
+      },
+      "docCreatorId": {
+        "type": "keyword"
+      },
+      "docCreatorName": {
+        "type": "text",
+        "analyzer": "nori_analyzer", 
+        "search_analyzer": "nori_search_analyzer",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 512
+          }
+        }
+      },
+      "docCreatedDate": {
+        "type": "date",
+        "format": "strict_date_optional_time||yyyy-MM-dd HH:mm:ss||yyyy-MM-dd||epoch_millis"
+      },
+      "docUpdaterId": {
+        "type": "keyword"
+      },
+      "docUpdaterName": {
+        "type": "text",
+        "analyzer": "nori_analyzer", 
+        "search_analyzer": "nori_search_analyzer",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 512
+          }
+        }
+      },
+      "docUpdatedDate": {
+        "type": "date",
+        "format": "strict_date_optional_time||yyyy-MM-dd HH:mm:ss||yyyy-MM-dd||epoch_millis"
+      },
+      "folderId": {
+        "type": "keyword"
+      },
+      "folderPath": {
+        "type": "text",
+        "analyzer": "nori_analyzer", 
+        "search_analyzer": "nori_search_analyzer",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 512
+          }
+        }
+      },
+      "gnbTabName": {
+        "type": "keyword"
+      },
+      "collapseCd": {
+        "type": "keyword"
+      },
+      "fileIsOrigin": {
+        "type": "keyword"
+      },
+      "fileItemIndex": {
+        "type": "keyword"
+      },
+      "fileCreatorId": {
+        "type": "keyword"
+      },
+      "fileCreatorName": {
+        "type": "text",
+        "analyzer": "nori_analyzer",
+        "search_analyzer": "nori_search_analyzer",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 512
+          }
+        }
+      },
+      "fileCreatedDate": {
+        "type": "date",
+        "format": "strict_date_optional_time||yyyy-MM-dd HH:mm:ss||yyyy-MM-dd||epoch_millis"
+      },
+      "fileRepositoryName": {
+        "type": "keyword"
+      },
+      "fileRepositoryWorkspace": {
+        "type": "keyword"
+      },
+      "docSecurityLevel": {
+        "type": "keyword"
+      },
+      "docSecurityLevelNm": {
+        "type": "keyword"
+      },
+      "docAclId": {
+        "type": "keyword"
+      },
+      "aclPrincipalTags": {
+        "type": "keyword"
+      },
+      "sharePrincipalTags": {
+        "type": "keyword"
+      }
+    }
+  }
+}
