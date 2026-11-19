@@ -41,7 +41,7 @@
 			<field name="fileContent" role="file_data" index="yes" />
 		</es_field_info>
 
-		<data_source last_doc_indexdate="2026-11-18 17:11:09" delete_not_indexed="yes">
+		<data_source last_doc_indexdate="2026-11-18 18:49:53" delete_not_indexed="yes">
 			<query_info>
 				<key_query dataSource="db_conn1" cursor_use="no">
 					<![CDATA[
@@ -55,8 +55,9 @@ WHERE X.DOC_IS_CURRENT = 1
 -- ===================================================================================
 -- [테스트 색인용] 특정 프로젝트 3건에 속한 파일만 대상으로 할 때. 전체 색인 시 아래 2줄 주석 처리
 -- ===================================================================================
-AND X.DOC_SERIES_ID='11d0fa33-003f-4b93-9bdc-da5354fc0c03'
+-- AND X.DOC_SERIES_ID='11d0fa33-003f-4b93-9bdc-da5354fc0c03'
 --AND X.FILE_ID='778f3d99-63a9-44eb-a0e9-a2baae4b8a43'
+AND X.FILE_ID='48b7f08e-2f30-48cf-b2f0-d1e9dec93509'		-- 테스트 문서.png   for OCR 테스트
 AND X.MAP_NAME='부서문서'AND X.MAP_NAME='부서문서'
 AND ROWNUM <= 10
 -- ===================================================================================
@@ -189,7 +190,12 @@ AND X.FILE_ID = :fileId
 SELECT
     -- 개발서버 경로 : /repository/datastore/f2/e1/a6/f2e1a6e836b7b5d11163a3882ba74e1cffb2d0d52c421a6735f23dd9d2bd6ebb
     -- 			물리파일명 앞 2개씩 잘라서 신규경로 만들어 /repository/datastore + /f2/e1/a6/ 아래에 저장해놓음
-     'C:\workspace\samoocm\synap_v4\in\review.pptx'   AS "attach_path",
+--    '/repository/datastore/' ||
+--  SUBSTR(X.FILE_CONTENT_HASH, 1, 2) || '/' ||
+--  SUBSTR(X.FILE_CONTENT_HASH, 3, 2) || '/' ||
+--  SUBSTR(X.FILE_CONTENT_HASH, 5, 2) || '/' ||
+--  X.FILE_CONTENT_HASH                            AS "attach_path",
+	'C:\workspace\source_code\elastic_bulker\db_rawdata\test_ocr_doc\aaa.png' AS "attach_path",
 	X.FILE_NAME            AS "attach_nm"
     -- ===================================================================================
     -- [운영용] DiskFileHelper가 바로 열 수 있는 실제 마운트 경로로 확정되면 아래로 교체
